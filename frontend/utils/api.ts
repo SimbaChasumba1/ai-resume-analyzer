@@ -1,9 +1,7 @@
 import axios from "axios";
 
-
-
-export default axios.create({
-
-  baseURL: "https://localhost:5001", // .NET API
-
+const api = axios.create({
+  baseURL: "http://localhost:5240", 
 });
+
+export default api;
