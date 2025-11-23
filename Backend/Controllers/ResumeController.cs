@@ -1,55 +1,43 @@
 using Microsoft.AspNetCore.Mvc;
-using Backend.Data;
-using Backend.Models;
-using Microsoft.AspNetCore.Hosting;
 using System.IO;
+using Microsoft.AspNetCore.Http;
+using System.Threading.Tasks;
 
-namespace Backend.Controllers
+[Route("api/[controller]")]
+[ApiController]
+public class ResumesController : ControllerBase
 {
-    [ApiController]
-    [Route("resumes")]
-    public class ResumeController : ControllerBase
+    private readonly ResumeParserService _resumeParserService;
+
+    public ResumesController(ResumeParserService resumeParserService)
     {
-        private readonly AppDbContext _context;
-        private readonly IWebHostEnvironment _env;
+        _resumeParserService = resumeParserService;
+    }
 
-        public ResumeController(AppDbContext context, IWebHostEnvironment env)
-        {
-            _context = context;
-            _env = env;
-        }
+    [HttpPost("upload")]
+    public async Task<IActionResult> Upload([FromForm] IFormFile file)
+    {
+        if (file == null || file.Length == 0)
+            return BadRequest("No file uploaded.");
 
-        // Endpoint to upload a resume
-        [HttpPost("upload")]
-        public async Task<IActionResult> Upload([FromForm] IFormFile file)
-        {
-            if (file == null || file.Length == 0)
-                return BadRequest("No file uploaded");
+        if (!file.FileName.EndsWith(".pdf") && !file.FileName.EndsWith(".docx"))
+            return BadRequest("Invalid file format. Only PDF and DOCX are supported.");
 
-            // Define the uploads directory
-            var uploads = Path.Combine(_env.ContentRootPath, "Uploads");
-            if (!Directory.Exists(uploads))
-                Directory.CreateDirectory(uploads);
+        if (file.Length > 5 * 1024 * 1024) // 5MB size limit
+            return BadRequest("File is too large. Max size is 5MB.");
 
-            // Save the file to the server
-            var filePath = Path.Combine(uploads, file.FileName);
-            using (var stream = System.IO.File.Create(filePath))
-                await file.CopyToAsync(stream);
+        var uploads = Path.Combine(Directory.GetCurrentDirectory(), "Uploads");
+        if (!Directory.Exists(uploads))
+            Directory.CreateDirectory(uploads);
 
-            // Save resume info in the database
-            var resume = new Resume
-            {
-                OriginalFileName = file.FileName,
-                FilePath = filePath
-            };
+        var filePath = Path.Combine(uploads, file.FileName);
 
-            _context.Resumes.Add(resume);
-            await _context.SaveChangesAsync();
+        using (var stream = System.IO.File.Create(filePath))
+            await file.CopyToAsync(stream);
 
-            // Example: Returning dummy skills data for now (replace with actual logic)
-            var skills = new[] { "JavaScript", "React", "C#" };
+        // Parse the resume and extract skills
+        var skills = _resumeParserService.ExtractSkillsFromResume(filePath);
 
-            return Ok(new { id = resume.Id, skills });
-        }
+        return Ok(new { id = 1, skills = skills });
     }
 }
