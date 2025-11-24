@@ -1,73 +1,48 @@
+"use client"; 
+
 import React, { useState } from "react";
-import axios from "../utils/api";
+import axios from "../utils/api"; 
 import styled from "styled-components";
 
-// Styled Components
-const FormContainer = styled.div`
-  margin: 20px;
+// TypeScript type for the event
+interface ChangeEvent {
+  target: HTMLInputElement;
+}
+
+const Container = styled.div`
   padding: 20px;
-  text-align: center;
-  background-color: #f4f4f4;
-  border-radius: 10px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 `;
 
-const Heading = styled.h2`
-  font-size: 24px;
+const Title = styled.h2`
   color: #333;
 `;
 
-const UploadButton = styled.button`
-  margin-top: 10px;
-  padding: 10px 20px;
-  font-size: 16px;
-  cursor: pointer;
+const Button = styled.button`
   background-color: #007bff;
   color: white;
+  padding: 10px 15px;
   border: none;
-  border-radius: 5px;
-
+  cursor: pointer;
   &:disabled {
     background-color: #ccc;
   }
 `;
 
-const FileInput = styled.input`
+const SkillList = styled.div`
   margin-top: 20px;
-  padding: 5px;
-  font-size: 16px;
+  ul {
+    list-style-type: none;
+  }
 `;
 
-const SkillList = styled.ul`
-  list-style-type: none;
-  padding: 0;
-`;
-
-const SkillItem = styled.li`
-  font-size: 18px;
-  color: #333;
-`;
-
-export default function UploadForm() {
+const UploadForm: React.FC = () => {
   const [file, setFile] = useState<File | null>(null);
-  const [status, setStatus] = useState<string>("");
-  const [skills, setSkills] = useState<string[]>([]);
+  const [status, setStatus] = useState<string>("");  // Upload status
+  const [skills, setSkills] = useState<string[]>([]); // Extracted skills from the resume
 
+  // Handler to upload the resume
   const uploadResume = async () => {
-    if (!file) {
-      setStatus("Please select a file.");
-      return;
-    }
-
-    if (!file.name.endsWith(".pdf") && !file.name.endsWith(".docx")) {
-      setStatus("Invalid file format. Only PDF and DOCX are allowed.");
-      return;
-    }
-
-    if (file.size > 5 * 1024 * 1024) { // 5MB
-      setStatus("File size exceeds the 5MB limit.");
-      return;
-    }
+    if (!file) return;
 
     setStatus("Uploading...");
 
@@ -78,40 +53,49 @@ export default function UploadForm() {
       const res = await axios.post("/resumes/upload", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
+
       setStatus(`Upload success! ID: ${res.data.id}`);
-      setSkills(res.data.skills); // Set extracted skills
-    } catch (err) {
-      if (err instanceof Error) {
-        setStatus(`Upload failed: ${err.message}`);
-      } else {
-        setStatus("Upload failed.");
-      }
+      setSkills(res.data.skills); // Assuming your backend sends the extracted skills
+    } catch (err: any) {
+      console.error(err);
+      setStatus("Upload failed");
     }
   };
 
+  // Handle file input change
+  const handleFileChange = (e: ChangeEvent) => {
+    const selectedFile = e.target.files ? e.target.files[0] : null;
+    setFile(selectedFile);
+  };
+
   return (
-    <FormContainer>
-      <Heading>Upload Resume</Heading>
-      <FileInput
+    <Container>
+      <Title>Upload Resume</Title>
+      
+      {/* File input */}
+      <input
         type="file"
         accept=".pdf,.docx"
-        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFile(e.target.files?.[0] ?? null)}
+        onChange={handleFileChange}
       />
-      <UploadButton onClick={uploadResume} disabled={!file}>
-        Upload
-      </UploadButton>
+      <Button onClick={uploadResume} disabled={!file}>Upload</Button>
+
+      {/* Status message */}
       {status && <p>{status}</p>}
 
+      {/* Display detected skills */}
       {skills.length > 0 && (
-        <div>
+        <SkillList>
           <h3>Detected Skills:</h3>
-          <SkillList>
+          <ul>
             {skills.map((skill, index) => (
-              <SkillItem key={index}>{skill}</SkillItem>
+              <li key={index}>{skill}</li>
             ))}
-          </SkillList>
-        </div>
+          </ul>
+        </SkillList>
       )}
-    </FormContainer>
+    </Container>
   );
-}
+};
+
+export default UploadForm;

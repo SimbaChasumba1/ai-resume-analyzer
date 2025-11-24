@@ -1,35 +1,38 @@
-using System.Collections.Generic;
 using System.IO;
-using Xceed.Words.NET; // For DOCX parsing
-using UglyToad.PdfPig; // For PDF parsing
+using Xceed.Words.NET;
+using UglyToad.PdfPig;
 
-public class ResumeParser
+namespace Backend.Services
 {
-    // Extracts skills from the uploaded resume
-    public List<string> ExtractSkillsFromResume(string filePath)
+    public class ResumeParser
     {
-        var extractedSkills = new List<string>();
+        private readonly SkillExtractor _skillExtractor;
 
-        // Check if it's a PDF or DOCX file and process accordingly
-        if (filePath.EndsWith(".pdf"))
+        public ResumeParser(SkillExtractor skillExtractor)
         {
-            var text = PdfReader.ReadText(filePath); // Read PDF text
-            extractedSkills.AddRange(ExtractSkillsFromText(text)); // Extract skills from text
-        }
-        else if (filePath.EndsWith(".docx"))
-        {
-            var doc = DocX.Load(filePath); // Load DOCX file
-            var text = doc.Text;
-            extractedSkills.AddRange(ExtractSkillsFromText(text)); // Extract skills from text
+            _skillExtractor = skillExtractor;
         }
 
-        return extractedSkills;
-    }
+        public List<string> ExtractSkillsFromResume(string filePath)
+        {
+            var text = string.Empty;
+            if (filePath.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase))
+            {
+                using (var doc = PdfDocument.Open(filePath))
+                {
+                    foreach (var page in doc.GetPages()) text += "\n" + page.Text;
+                }
+            }
+            else if (filePath.EndsWith(".docx", StringComparison.OrdinalIgnoreCase))
+            {
+                var doc = DocX.Load(filePath);
+                text = doc.Text ?? string.Empty;
+            }
 
-    // Simple skill extraction (In real-world scenarios, you would improve this with NLP or regex)
-    private List<string> ExtractSkillsFromText(string text)
-    {
-        var skills = new List<string> { "C#", "JavaScript", "React", "SQL" };
-        return skills; // This is a mock implementation, adjust as needed
+            if (string.IsNullOrWhiteSpace(text))
+                text = File.ReadAllText(filePath);
+
+            return _skillExtractor.Extract(text);
+        }
     }
 }
