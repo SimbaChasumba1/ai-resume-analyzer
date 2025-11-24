@@ -63,6 +63,16 @@ This project is a web application that allows users to upload resumes, extract k
 
 ---
 
+## Day 3 - Auth, Improved Upload UI & DB persistence
+
+### Tasks Completed:
+- Implemented JWT-based auth (register/login) so users can upload resumes to a protected endpoint.
+- Improved Upload UI: drag & drop, validation (PDF/DOCX, max 5MB), progress bar, nicer styling using styled-components.
+- Backend: Save resume metadata to DB (Resumes table). Resume parsing uses PDF and DOCX libs and a SkillExtractor service.
+- Added migrations commands and instructions.
+- UI images and brand polish included (see `/frontend/public` or referenced local assets).
+
+
 ## Tech Stack
 
 - **Backend:**
