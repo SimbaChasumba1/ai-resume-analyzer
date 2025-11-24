@@ -1,52 +1,62 @@
 using Microsoft.EntityFrameworkCore;
 using Backend.Data;
+using Backend.Services;
 using Microsoft.OpenApi.Models;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container
+// Add services
 builder.Services.AddControllers();
 
-// Configure EF Core for database
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"))
-);
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// Add Swagger for API documentation
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(c =>
-{
-    c.SwaggerDoc("v1", new OpenApiInfo { Title = "AI Resume Analyzer API", Version = "v1" });
-});
+builder.Services.AddScoped<SkillExtractor>();
+builder.Services.AddScoped<ResumeParser>();
+builder.Services.AddScoped<JwtService>();
 
-// Add CORS to allow frontend requests
-builder.Services.AddCors(options =>
+var key = builder.Configuration["Jwt:Key"] ?? "please_change_this_to_strong_key";
+var issuer = builder.Configuration["Jwt:Issuer"] ?? "ai-resume";
+var audience = builder.Configuration["Jwt:Audience"] ?? "ai-resume-aud";
+
+builder.Services.AddAuthentication(options =>
 {
-    options.AddPolicy("AllowFrontend", policy =>
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+}).AddJwtBearer(options =>
+{
+    options.RequireHttpsMetadata = false;
+    options.TokenValidationParameters = new TokenValidationParameters
     {
-        policy.WithOrigins("http://localhost:3000") // Frontend URL
-              .AllowAnyHeader()
-              .AllowAnyMethod();
-    });
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = issuer,
+        ValidAudience = audience,
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key))
+    };
 });
+
+builder.Services.AddCors(options => options.AddPolicy("AllowFrontend", p => p.AllowAnyHeader().AllowAnyMethod().WithOrigins("http://localhost:3000")));
+
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(c => c.SwaggerDoc("v1", new OpenApiInfo { Title = "AI Resume Analyzer API", Version = "v1" }));
 
 var app = builder.Build();
 
-// Apply the CORS policy
 app.UseCors("AllowFrontend");
 
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI(c =>
-    {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "AI Resume Analyzer API V1");
-    });
+    app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
-
 app.Run();

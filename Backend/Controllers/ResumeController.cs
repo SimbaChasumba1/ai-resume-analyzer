@@ -1,43 +1,47 @@
 using Microsoft.AspNetCore.Mvc;
-using System.IO;
-using Microsoft.AspNetCore.Http;
-using System.Threading.Tasks;
+using Backend.Services;
+using Backend.Data;
+using Backend.Models;
+using Microsoft.AspNetCore.Authorization;
 
-[Route("api/[controller]")]
-[ApiController]
-public class ResumesController : ControllerBase
+namespace Backend.Controllers
 {
-    private readonly ResumeParserService _resumeParserService;
-
-    public ResumesController(ResumeParserService resumeParserService)
+    [ApiController]
+    [Route("api/[controller]")]
+    public class ResumesController : ControllerBase
     {
-        _resumeParserService = resumeParserService;
-    }
+        private readonly ResumeParser _parser;
+        private readonly AppDbContext _db;
+        private readonly IWebHostEnvironment _env;
 
-    [HttpPost("upload")]
-    public async Task<IActionResult> Upload([FromForm] IFormFile file)
-    {
-        if (file == null || file.Length == 0)
-            return BadRequest("No file uploaded.");
+        public ResumesController(ResumeParser parser, AppDbContext db, IWebHostEnvironment env)
+        {
+            _parser = parser; _db = db; _env = env;
+        }
 
-        if (!file.FileName.EndsWith(".pdf") && !file.FileName.EndsWith(".docx"))
-            return BadRequest("Invalid file format. Only PDF and DOCX are supported.");
+        [HttpPost("upload")]
+        [Authorize]
+        public async Task<IActionResult> Upload([FromForm] IFormFile file)
+        {
+            if (file == null || file.Length == 0) return BadRequest("No file uploaded.");
+            if (!file.FileName.EndsWith(".pdf") && !file.FileName.EndsWith(".docx")) return BadRequest("Only PDF/DOCX allowed.");
+            if (file.Length > 5 * 1024 * 1024) return BadRequest("Max 5MB.");
 
-        if (file.Length > 5 * 1024 * 1024) // 5MB size limit
-            return BadRequest("File is too large. Max size is 5MB.");
+            var uploads = Path.Combine(_env.ContentRootPath, "Uploads");
+            if (!Directory.Exists(uploads)) Directory.CreateDirectory(uploads);
 
-        var uploads = Path.Combine(Directory.GetCurrentDirectory(), "Uploads");
-        if (!Directory.Exists(uploads))
-            Directory.CreateDirectory(uploads);
+            var safeName = $"{Guid.NewGuid()}_{Path.GetFileName(file.FileName)}";
+            var filePath = Path.Combine(uploads, safeName);
 
-        var filePath = Path.Combine(uploads, file.FileName);
+            await using (var stream = System.IO.File.Create(filePath)) await file.CopyToAsync(stream);
 
-        using (var stream = System.IO.File.Create(filePath))
-            await file.CopyToAsync(stream);
+            var skills = _parser.ExtractSkillsFromResume(filePath);
 
-        // Parse the resume and extract skills
-        var skills = _resumeParserService.ExtractSkillsFromResume(filePath);
+            var resume = new Resume { OriginalFileName = file.FileName, FilePath = filePath };
+            _db.Resumes.Add(resume);
+            await _db.SaveChangesAsync();
 
-        return Ok(new { id = 1, skills = skills });
+            return Ok(new { id = resume.Id, skills });
+        }
     }
 }
