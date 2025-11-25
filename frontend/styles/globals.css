@@ -1,0 +1,12 @@
+/* Reset + base styles */
+body {
+  margin: 0;
+  padding: 0;
+  background: #f9fafb;
+  font-family: Arial, sans-serif;
+}
+
+/* Make uploads look nice */
+* {
+  box-sizing: border-box;
+}

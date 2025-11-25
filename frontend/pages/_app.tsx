@@ -1,18 +1,14 @@
-import type { AppProps } from 'next/app';
-import React from 'react';
-import Head from 'next/head';
-import { createGlobalStyle } from 'styled-components';
+import type { AppProps } from "next/app";
+import Navbar from "../components/Navbar";
+import "../styles/globals.css";
 
-const Global = createGlobalStyle`
-  body { background: #f8fafc; font-family: Inter, ui-sans-serif, system-ui, -apple-system; margin:0 }
-`;
-
-export default function App({ Component, pageProps }: AppProps){
+export default function MyApp({ Component, pageProps }: AppProps) {
   return (
     <>
-      <Head><title>AI Resume Analyzer</title></Head>
-      <Global />
-      <Component {...pageProps} />
+      <Navbar />
+      <div style={{ padding: "40px" }}>
+        <Component {...pageProps} />
+      </div>
     </>
   );
 }

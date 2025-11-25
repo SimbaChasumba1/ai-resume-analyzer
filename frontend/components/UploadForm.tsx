@@ -1,216 +1,142 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
-import type { AxiosProgressEvent } from "axios";  
-import axios from "../utils/api";             
-import styled from "styled-components";
-
-const Container = styled.div`
-  max-width: 760px;
-  margin: 24px auto;
-  background: #ffffff;
-  border-radius: 12px;
-  padding: 24px;
-  box-shadow: 0 6px 18px rgba(20,20,30,0.06);
-`;
-
-const Title = styled.h2`
-  color: #111827;
-  margin-bottom: 8px;
-`;
-
-const DropArea = styled.label<{ isDragging: boolean }>`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  padding: 28px;
-  border: 2px dashed ${p => (p.isDragging ? "#2563eb" : "#e5e7eb")};
-  background: ${p => (p.isDragging ? "rgba(37,99,235,0.04)" : "transparent")};
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.15s ease;
-`;
-
-const Controls = styled.div`
-  display: flex;
-  gap: 12px;
-  margin-top: 16px;
-`;
-
-const Button = styled.button`
-  background-color: #2563eb;
-  color: white;
-  padding: 10px 16px;
-  border: none;
-  cursor: pointer;
-  border-radius: 8px;
-  font-weight: 600;
-  &:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-`;
-
-const Text = styled.p`
-  margin: 0;
-  color: #6b7280;
-`;
-
-const ProgressBar = styled.div`
-  height: 8px;
-  background: #f3f4f6;
-  border-radius: 999px;
-  overflow: hidden;
-  margin-top: 12px;
-`;
-
-const Progress = styled.div<{ pct: number }>`
-  height: 100%;
-  width: ${p => p.pct}%;
-  background: linear-gradient(90deg, #2563eb, #60a5fa);
-  transition: width 0.25s ease;
-`;
-
-const SkillList = styled.div`
-  margin-top: 20px;
-  ul {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    padding: 0;
-    margin: 8px 0 0 0;
-    list-style: none;
-  }
-  li {
-    background: #f8fafc;
-    padding: 6px 10px;
-    border-radius: 999px;
-    color: #0f172a;
-    font-weight: 600;
-    font-size: 13px;
-  }
-`;
+import { useState, useRef } from "react";
+import axios from "axios";
+import Navbar from "../components/Navbar";
 
 export default function UploadForm() {
   const [file, setFile] = useState<File | null>(null);
-  const [status, setStatus] = useState<string>("");
-  const [skills, setSkills] = useState<string[]>([]);
+  const [status, setStatus] = useState("");
   const [isDragging, setIsDragging] = useState(false);
-  const [progress, setProgress] = useState(0);
   const inputRef = useRef<HTMLInputElement | null>(null);
 
-  useEffect(() => {
-    if (progress === 100) setTimeout(() => setProgress(0), 600);
-  }, [progress]);
-
-  const handleFile = (f: File | null) => {
-    if (!f) return setFile(null);
-    const allowed = [
-      "application/pdf",
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    ];
-    if (!allowed.includes(f.type)) {
-      setStatus("Invalid file type. Please upload a PDF or DOCX.");
-      setFile(null);
-      return;
-    }
-    if (f.size > 5 * 1024 * 1024) {
-      setStatus("File too large. Max 5MB.");
-      setFile(null);
-      return;
-    }
-    setStatus("");
+  // Handle file selection
+  const handleFileSelect = (f: File | null) => {
     setFile(f);
+    if (f) setStatus(`Selected: ${f.name}`);
   };
 
-  const onDrop = (e: React.DragEvent<HTMLLabelElement>) => {
+  // Drag events
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setIsDragging(false);
     const f = e.dataTransfer.files[0];
-    handleFile(f || null);
+    handleFileSelect(f || null);
   };
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+  const handleDragLeave = () => setIsDragging(false);
 
-  const uploadResume = async () => {
-    if (!file) return;
-    setStatus("Uploading...");
-    setSkills([]);
-    setProgress(6);
-
-    const formData = new FormData();
-    formData.append("file", file);
+  // Upload
+  const onUpload = async () => {
+    if (!file) {
+      setStatus("Please select a PDF.");
+      return;
+    }
 
     try {
-      const res = await axios.post("/resumes/upload", formData, {
+      setStatus("Uploading...");
+      const formData = new FormData();
+      formData.append("file", file);
+
+      await axios.post("http://localhost:5001/upload", formData, {
         headers: { "Content-Type": "multipart/form-data" },
-        onUploadProgress: (progressEvent: AxiosProgressEvent) => {
-          if (progressEvent.total) {
-            const pct = Math.round((progressEvent.loaded / progressEvent.total) * 100);
-            setProgress(pct);
-          }
-        },
       });
 
-      setStatus("Upload success!");
-      setSkills(res.data.skills || []);
-      setProgress(100);
-    } catch (err: any) {
-      console.error(err?.response || err);
-      setStatus(err?.response?.data || "Upload failed");
-      setProgress(0);
+      setStatus("Upload successful!");
+    } catch {
+      setStatus("Upload failed.");
     }
   };
 
   return (
-    <Container>
-      <Title>Upload resume</Title>
-      <DropArea
-        htmlFor="file-input"
-        isDragging={isDragging}
-        onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
-        onDragLeave={() => setIsDragging(false)}
-        onDrop={onDrop}
-      >
-        <div style={{ textAlign: "center" }}>
-          <strong>{file ? file.name : "Drag & drop your resume here"}</strong>
-          <div style={{ marginTop: 6 }}>
-            <Text>{file ? `${Math.round(file.size / 1024)} KB` : "PDF or DOCX — up to 5MB"}</Text>
-          </div>
+    <>
+      <Navbar />
+      <div style={styles.container}>
+        <h1 style={styles.title}>Upload Your Resume</h1>
+        <p style={styles.subtitle}>Upload a PDF and get an AI-powered resume analysis</p>
+
+        {/* Drag + Click Box */}
+        <div
+          style={{
+            ...styles.uploadBox,
+            borderColor: isDragging ? "#2563eb" : "#999",
+            background: isDragging ? "#f0f8ff" : "#fafafa",
+          }}
+          onDrop={handleDrop}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onClick={() => inputRef.current?.click()}
+        >
+          <input
+            ref={inputRef}
+            type="file"
+            accept="application/pdf"
+            style={{ display: "none" }}
+            onChange={(e) => handleFileSelect(e.target.files?.[0] || null)}
+          />
+          <p style={styles.uploadText}><strong>Click to select a PDF</strong></p>
+          <p style={styles.uploadSubtext}>or drag & drop here</p>
         </div>
-        <input
-          id="file-input"
-          ref={inputRef}
-          type="file"
-          accept=".pdf,.docx"
-          style={{ display: "none" }}
-          onChange={(e) => handleFile(e.target.files ? e.target.files[0] : null)}
-        />
-      </DropArea>
 
-      <Controls>
-        <Button onClick={() => inputRef.current?.click()}>Choose file</Button>
-        <Button onClick={uploadResume} disabled={!file}>
-          Upload
-        </Button>
-      </Controls>
+        {file && <p style={styles.selectedFile}>📄 {file.name}</p>}
 
-      {status && <p style={{ marginTop: 12 }}>{status}</p>}
+        {/* Buttons */}
+        <div style={styles.buttonGroup}>
+          <button style={styles.button} onClick={() => inputRef.current?.click()}>
+            Choose File
+          </button>
+          <button style={styles.button} onClick={onUpload} disabled={!file}>
+            Analyze Resume
+          </button>
+        </div>
 
-      <ProgressBar aria-hidden>
-        <Progress pct={progress} />
-      </ProgressBar>
-
-      {skills.length > 0 && (
-        <SkillList>
-          <h4>Detected skills</h4>
-          <ul>
-            {skills.map((s, i) => (
-              <li key={i}>{s}</li>
-            ))}
-          </ul>
-        </SkillList>
-      )}
-    </Container>
+        {status && <p style={styles.status}>{status}</p>}
+      </div>
+    </>
   );
 }
 
+/* --------------------- STYLES --------------------- */
+
+const styles: Record<string, any> = {
+  container: {
+    maxWidth: "600px",
+    margin: "120px auto 50px auto", // space below sticky navbar
+    background: "white",
+    padding: "40px",
+    borderRadius: "12px",
+    boxShadow: "0 4px 20px rgba(0,0,0,0.07)",
+    textAlign: "center",
+  },
+  title: { fontSize: "30px", fontWeight: 700, marginBottom: "10px" },
+  subtitle: { fontSize: "16px", color: "#555", marginBottom: "25px" },
+  uploadBox: {
+    border: "2px dashed #999",
+    padding: "40px",
+    borderRadius: "12px",
+    cursor: "pointer",
+    marginBottom: "20px",
+    transition: "0.2s",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+  },
+  uploadText: { fontSize: "18px", margin: 0 },
+  uploadSubtext: { fontSize: "14px", color: "#777", marginTop: "5px" },
+  selectedFile: { marginTop: "10px", fontSize: "15px" },
+  buttonGroup: { display: "flex", gap: "10px", justifyContent: "center", marginTop: "15px" },
+  button: {
+    padding: "12px 20px",
+    background: "black",
+    color: "white",
+    borderRadius: "8px",
+    cursor: "pointer",
+    border: "none",
+    fontWeight: 600,
+    minWidth: "120px",
+  },
+  status: { marginTop: "15px", fontSize: "14px", color: "#333" },
+};
