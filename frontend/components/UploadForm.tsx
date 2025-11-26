@@ -2,7 +2,6 @@
 
 import { useState, useRef } from "react";
 import axios from "axios";
-import Navbar from "../components/Navbar";
 
 export default function UploadForm() {
   const [file, setFile] = useState<File | null>(null);
@@ -10,26 +9,25 @@ export default function UploadForm() {
   const [isDragging, setIsDragging] = useState(false);
   const inputRef = useRef<HTMLInputElement | null>(null);
 
-  // Handle file selection
   const handleFileSelect = (f: File | null) => {
     setFile(f);
     if (f) setStatus(`Selected: ${f.name}`);
   };
 
-  // Drag events
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setIsDragging(false);
     const f = e.dataTransfer.files[0];
     handleFileSelect(f || null);
   };
+
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setIsDragging(true);
   };
+
   const handleDragLeave = () => setIsDragging(false);
 
-  // Upload
   const onUpload = async () => {
     if (!file) {
       setStatus("Please select a PDF.");
@@ -41,70 +39,72 @@ export default function UploadForm() {
       const formData = new FormData();
       formData.append("file", file);
 
-      await axios.post("http://localhost:5001/upload", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+      const res = await axios.post(
+        "http://localhost:5240/upload",
+        formData,
+        { headers: { "Content-Type": "multipart/form-data" } }
+      );
 
-      setStatus("Upload successful!");
-    } catch {
+      if (res.status === 200) {
+        setStatus("Upload successful!");
+      } else {
+        setStatus("Upload failed.");
+      }
+    } catch (err) {
       setStatus("Upload failed.");
     }
   };
 
   return (
-    <>
-      <Navbar />
-      <div style={styles.container}>
-        <h1 style={styles.title}>Upload Your Resume</h1>
-        <p style={styles.subtitle}>Upload a PDF and get an AI-powered resume analysis</p>
+    <div style={styles.container}>
+      <h1 style={styles.title}>Upload Your Resume</h1>
+      <p style={styles.subtitle}>Upload a PDF and get an AI-powered resume analysis</p>
 
-        {/* Drag + Click Box */}
-        <div
-          style={{
-            ...styles.uploadBox,
-            borderColor: isDragging ? "#2563eb" : "#999",
-            background: isDragging ? "#f0f8ff" : "#fafafa",
-          }}
-          onDrop={handleDrop}
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onClick={() => inputRef.current?.click()}
-        >
-          <input
-            ref={inputRef}
-            type="file"
-            accept="application/pdf"
-            style={{ display: "none" }}
-            onChange={(e) => handleFileSelect(e.target.files?.[0] || null)}
-          />
-          <p style={styles.uploadText}><strong>Click to select a PDF</strong></p>
-          <p style={styles.uploadSubtext}>or drag & drop here</p>
-        </div>
+      {/* Drag & Drop Box */}
+      <div
+        style={{
+          ...styles.uploadBox,
+          borderColor: isDragging ? "#2563eb" : "#999",
+          background: isDragging ? "#f0f8ff" : "#fafafa",
+        }}
+        onDrop={handleDrop}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onClick={() => inputRef.current?.click()}
+      >
+        <input
+          ref={inputRef}
+          type="file"
+          accept="application/pdf"
+          style={{ display: "none" }}
+          onChange={(e) => handleFileSelect(e.target.files?.[0] || null)}
+        />
 
-        {file && <p style={styles.selectedFile}>📄 {file.name}</p>}
-
-        {/* Buttons */}
-        <div style={styles.buttonGroup}>
-          <button style={styles.button} onClick={() => inputRef.current?.click()}>
-            Choose File
-          </button>
-          <button style={styles.button} onClick={onUpload} disabled={!file}>
-            Analyze Resume
-          </button>
-        </div>
-
-        {status && <p style={styles.status}>{status}</p>}
+        <p style={styles.uploadText}><strong>Click to select a PDF</strong></p>
+        <p style={styles.uploadSubtext}>or drag & drop here</p>
       </div>
-    </>
+
+      {file && <p style={styles.selectedFile}>📄 {file.name}</p>}
+
+      <div style={styles.buttonGroup}>
+        <button style={styles.button} onClick={() => inputRef.current?.click()}>
+          Choose File
+        </button>
+        <button style={styles.button} onClick={onUpload} disabled={!file}>
+          Analyze Resume
+        </button>
+      </div>
+
+      {status && <p style={styles.status}>{status}</p>}
+    </div>
   );
 }
 
-/* --------------------- STYLES --------------------- */
-
+/* ----------------- STYLES ----------------- */
 const styles: Record<string, any> = {
   container: {
     maxWidth: "600px",
-    margin: "120px auto 50px auto", // space below sticky navbar
+    margin: "120px auto",
     background: "white",
     padding: "40px",
     borderRadius: "12px",

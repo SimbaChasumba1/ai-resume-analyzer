@@ -1,12 +1,10 @@
-/* Reset + base styles */
-body {
+/* globals.css - minimal reset */
+html,body,#__next {
+  height: 100%;
   margin: 0;
-  padding: 0;
-  background: #f9fafb;
-  font-family: Arial, sans-serif;
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  background: #f3f6fb;
+  color: #0f172a;
 }
 
-/* Make uploads look nice */
-* {
-  box-sizing: border-box;
-}
+a { color: inherit; text-decoration: none; }

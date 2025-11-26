@@ -6,9 +6,7 @@ export default function MyApp({ Component, pageProps }: AppProps) {
   return (
     <>
       <Navbar />
-      <div style={{ padding: "40px" }}>
-        <Component {...pageProps} />
-      </div>
+      <Component {...pageProps} />
     </>
   );
 }
