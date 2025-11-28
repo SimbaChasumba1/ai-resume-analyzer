@@ -22,13 +22,13 @@ namespace Backend.Controllers
             if (file == null || file.Length == 0)
                 return BadRequest("File missing.");
 
-            // 1. Extract text from PDF
+            // 1. Extract text
             string rawText = await _pdf.ExtractTextAsync(file);
 
             if (string.IsNullOrWhiteSpace(rawText))
                 return BadRequest("Could not extract text.");
 
-            // 2. Send to OpenAI
+            // 2. Call OpenAI / analysis service
             string aiResponse = await _openai.AnalyzeResume(rawText);
 
             return Ok(new

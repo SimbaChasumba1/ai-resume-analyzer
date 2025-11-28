@@ -1,42 +1,31 @@
 "use client";
-
 import Link from "next/link";
 
 export default function Navbar() {
   return (
-    <nav style={styles.nav}>
-      <h2 style={styles.logo}>AI Resume Analyzer</h2>
+    <nav
+      style={{
+        width: "100%",
+        padding: "20px 40px",
+        background: "rgba(37, 99, 235, 0.15)", // blue tint
+        backdropFilter: "blur(10px)",
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        position: "fixed",
+        top: 0,
+        left: 0,
+        zIndex: 50,
+      }}
+    >
+      <Link href="/" style={{ fontSize: 22, fontWeight: 700 }}>
+        AI Resume Analyzer
+      </Link>
 
-      <div style={styles.links}>
-        <Link href="/" style={styles.link}>Home</Link>
-        <Link href="/resume-analysis" style={styles.link}>Analysis</Link>
-        <Link href="/history" style={styles.link}>History</Link>
-        <Link href="/login" style={styles.button}>Login</Link>
+      <div style={{ display: "flex", gap: 20 }}>
+        <Link href="/login">Login</Link>
+        <Link href="/signup">Sign Up</Link>
       </div>
     </nav>
   );
 }
-
-const styles: Record<string, any> = {
-  nav: {
-    position: "fixed",
-    top: 0, left: 0,
-    width: "100%",
-    background: "white",
-    padding: "15px 40px",
-    display: "flex",
-    justifyContent: "space-between",
-    boxShadow: "0 2px 10px rgba(0,0,0,0.08)",
-    zIndex: 50
-  },
-  logo: { fontSize: "20px", fontWeight: 700 },
-  links: { display: "flex", gap: "20px", alignItems: "center" },
-  link: { textDecoration: "none", color: "#222", fontWeight: 500 },
-  button: {
-    padding: "8px 16px",
-    background: "black",
-    color: "white",
-    borderRadius: "6px",
-    textDecoration: "none"
-  }
-};

@@ -1,25 +1,37 @@
+using OpenAI;
 using OpenAI.Chat;
+using OpenAI.Models;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using Microsoft.Extensions.Configuration;
 
 namespace Backend.Services
 {
     public class OpenAIService
     {
-        private readonly string _apiKey;
+        private readonly OpenAIClient _client;
 
         public OpenAIService(IConfiguration config)
         {
-            _apiKey = config["OPENAI_API_KEY"];
+            _client = new OpenAIClient(config["OPENAI_API_KEY"]);
         }
 
-        public async Task<string> AnalyzeResume(string text)
+        public async Task<string> AnalyzeResume(string resumeText)
         {
-            var client = new ChatClient("gpt-4o-mini", _apiKey);
+            var messages = new List<ChatMessage>
+            {
+                new ChatMessage(ChatMessageRole.System, "You are an expert career advisor."),
+                new ChatMessage(ChatMessageRole.User, resumeText)
+            };
 
-            var result = await client.CompleteAsync(
-                $"Analyze this resume text and provide improvements, missing skills, strengths, weaknesses:\n\n{text}"
-            );
+            var request = new ChatCompletionCreateRequest
+            {
+                Model = Models.Gpt35Turbo,
+                Messages = messages
+            };
 
-            return result.Value;
+            var response = await _client.ChatCompletions.CreateCompletionAsync(request);
+            return response.Choices[0].Message.Content;
         }
     }
 }
