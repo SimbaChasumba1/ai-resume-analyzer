@@ -1,37 +1,31 @@
-using OpenAI;
-using OpenAI.Chat;
-using OpenAI.Models;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using Microsoft.Extensions.Configuration;
+using Azure.AI.OpenAI;
+using backend.Models; // only if you have your own models
 
-namespace Backend.Services
+namespace backend.Services
 {
     public class OpenAIService
     {
         private readonly OpenAIClient _client;
 
-        public OpenAIService(IConfiguration config)
+        public OpenAIService()
         {
-            _client = new OpenAIClient(config["OPENAI_API_KEY"]);
+            var apiKey = Environment.GetEnvironmentVariable("OPENAI_API_KEY") ?? "";
+            _client = new OpenAIClient(apiKey);
         }
 
         public async Task<string> AnalyzeResume(string resumeText)
         {
-            var messages = new List<ChatMessage>
+            var chatCompletionsOptions = new ChatCompletionsOptions()
             {
-                new ChatMessage(ChatMessageRole.System, "You are an expert career advisor."),
-                new ChatMessage(ChatMessageRole.User, resumeText)
+                Messages =
+                {
+                    new ChatMessage(ChatRole.System, "You are a resume analyzer."),
+                    new ChatMessage(ChatRole.User, resumeText)
+                }
             };
 
-            var request = new ChatCompletionCreateRequest
-            {
-                Model = Models.Gpt35Turbo,
-                Messages = messages
-            };
-
-            var response = await _client.ChatCompletions.CreateCompletionAsync(request);
-            return response.Choices[0].Message.Content;
+            var response = await _client.GetChatCompletionsAsync("gpt-35-turbo", chatCompletionsOptions);
+            return response.Value.Choices[0].Message.Content;
         }
     }
 }

@@ -1,0 +1,2 @@
+# Format: string_to_replace==replacement_string
+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==REDACTED

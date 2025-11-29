@@ -1,41 +1,28 @@
 using Microsoft.AspNetCore.Mvc;
-using Backend.Services;
+using backend.Models;
+using backend.Services;
 
-namespace Backend.Controllers
+namespace backend.Controllers
 {
     [ApiController]
-    [Route("ai")]
+    [Route("api/[controller]")]
     public class AIAnalysisController : ControllerBase
     {
-        private readonly PDFTextExtractor _pdf;
-        private readonly OpenAIService _openai;
+        private readonly OpenAIService _openAI;
 
-        public AIAnalysisController(PDFTextExtractor pdf, OpenAIService openai)
+        public AIAnalysisController(OpenAIService openAI)
         {
-            _pdf = pdf;
-            _openai = openai;
+            _openAI = openAI;
         }
 
         [HttpPost("analyze")]
-        public async Task<IActionResult> Analyze([FromForm] IFormFile file)
+        public async Task<IActionResult> Analyze([FromBody] ResumeAnalysisRequest request)
         {
-            if (file == null || file.Length == 0)
-                return BadRequest("File missing.");
+            if (request == null || string.IsNullOrWhiteSpace(request.ResumeText))
+                return BadRequest("ResumeText is required.");
 
-            // 1. Extract text
-            string rawText = await _pdf.ExtractTextAsync(file);
-
-            if (string.IsNullOrWhiteSpace(rawText))
-                return BadRequest("Could not extract text.");
-
-            // 2. Call OpenAI / analysis service
-            string aiResponse = await _openai.AnalyzeResume(rawText);
-
-            return Ok(new
-            {
-                text = rawText,
-                analysis = aiResponse
-            });
+            var analysis = await _openAI.AnalyzeResumeAsync(request.ResumeText);
+            return Ok(new { success = true, analysis });
         }
     }
 }

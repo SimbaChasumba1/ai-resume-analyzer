@@ -1,7 +1,8 @@
+using System.IO;
 using Microsoft.AspNetCore.Mvc;
-using Backend.Services;
+using backend.Services;
 
-namespace Backend.Controllers
+namespace backend.Controllers
 {
     [ApiController]
     [Route("[controller]")]
@@ -14,35 +15,36 @@ namespace Backend.Controllers
             _openAI = openAI;
         }
 
-        [HttpPost]
-        [Route("analyze")]
-        public async Task<IActionResult> Upload([FromForm] IFormFile file)
+        [HttpPost("analyze")]
+        public async Task<IActionResult> UploadAndAnalyze([FromForm] IFormFile file)
         {
             if (file == null || file.Length == 0)
                 return BadRequest("No file uploaded.");
 
-            var folder = Path.Combine(Directory.GetCurrentDirectory(), "Uploads");
-            if (!Directory.Exists(folder))
-                Directory.CreateDirectory(folder);
+            var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "Uploads");
+            if (!Directory.Exists(uploadsFolder))
+                Directory.CreateDirectory(uploadsFolder);
 
-            var filePath = Path.Combine(folder, file.FileName);
+            var filePath = Path.Combine(uploadsFolder, file.FileName);
 
-            using (var stream = new FileStream(filePath, FileMode.Create))
+            using (var stream = System.IO.File.Create(filePath))
             {
                 await file.CopyToAsync(stream);
             }
 
-            // SIMPLE TEXT (replace with PDF extraction later)
-            string extractedText = "Extracted resume text placeholder.";
+            // For now: simply convert file to text placeholder
+            // You can integrate PDF or DOCX parsing later
+            string extractedText = $"Resume saved at: {filePath}";
 
-            var aiResult = await _openAI.AnalyzeResume(extractedText);
+            var analysis = await _openAI.AnalyzeResumeAsync(extractedText);
 
             return Ok(new
             {
-                uploaded = true,
-                file = file.FileName,
-                aiAnalysis = aiResult
+                success = true,
+                fileName = file.FileName,
+                analysis
             });
         }
     }
 }
+
