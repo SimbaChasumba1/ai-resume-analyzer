@@ -1,5 +1,7 @@
-using Azure.AI.OpenAI;
-using backend.Models; // only if you have your own models
+using OpenAI;
+using OpenAI.Chat;
+using OpenAI.Models;
+using Microsoft.Extensions.Configuration;
 
 namespace backend.Services
 {
@@ -7,25 +9,29 @@ namespace backend.Services
     {
         private readonly OpenAIClient _client;
 
-        public OpenAIService()
+        public OpenAIService(IConfiguration config)
         {
-            var apiKey = Environment.GetEnvironmentVariable("OPENAI_API_KEY") ?? "";
-            _client = new OpenAIClient(apiKey);
+            var apiKey = config["OpenAI:ApiKey"];
+            if (string.IsNullOrWhiteSpace(apiKey))
+                throw new ArgumentException("OpenAI API key is missing in configuration.");
+
+            _client = new OpenAIClient(new OpenAIAuthentication(apiKey));
         }
 
-        public async Task<string> AnalyzeResume(string resumeText)
+        public async Task<string> AnalyzeResumeAsync(string resumeText)
         {
-            var chatCompletionsOptions = new ChatCompletionsOptions()
+            var chatRequest = new ChatRequest()
             {
-                Messages =
+                Model = Models.Gpt3_5Turbo,
+                Messages = new List<ChatMessage>
                 {
-                    new ChatMessage(ChatRole.System, "You are a resume analyzer."),
                     new ChatMessage(ChatRole.User, resumeText)
                 }
             };
 
-            var response = await _client.GetChatCompletionsAsync("gpt-35-turbo", chatCompletionsOptions);
-            return response.Value.Choices[0].Message.Content;
+            var response = await _client.ChatEndpoint.GetCompletionAsync(chatRequest);
+
+            return response.Choices[0].Message.Content;
         }
     }
 }

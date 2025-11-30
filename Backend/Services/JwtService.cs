@@ -1,30 +1,35 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using System.Text;
 using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 namespace backend.Services
 {
     public class JwtService
     {
-        private readonly IConfiguration _config;
-        public JwtService(IConfiguration config) { _config = config; }
+        private readonly string _key;
 
-        public string CreateToken(int userId, string email)
+        public JwtService(IConfiguration config)
         {
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]));
-            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-            var claims = new[] {
-                new Claim(JwtRegisteredClaimNames.Sub, userId.ToString()),
-                new Claim(JwtRegisteredClaimNames.Email, email)
-            };
+            _key = config["Jwt:Key"] ?? "dev-secret-key";
+        }
+
+        public string GenerateToken(string userId)
+        {
+            var keyBytes = Encoding.UTF8.GetBytes(_key);
+
             var token = new JwtSecurityToken(
-                issuer: _config["Jwt:Issuer"],
-                audience: _config["Jwt:Audience"],
-                claims: claims,
-                expires: DateTime.UtcNow.AddDays(7),
-                signingCredentials: creds
+                claims: new[]
+                {
+                    new Claim("userId", userId)
+                },
+                expires: DateTime.UtcNow.AddHours(1),
+                signingCredentials: new SigningCredentials(
+                    new SymmetricSecurityKey(keyBytes),
+                    SecurityAlgorithms.HmacSha256
+                )
             );
+
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
     }

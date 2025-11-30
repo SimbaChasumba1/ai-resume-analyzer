@@ -1,6 +1,6 @@
-using System.IO;
 using Microsoft.AspNetCore.Mvc;
 using backend.Services;
+using System.IO;
 
 namespace backend.Controllers
 {
@@ -9,14 +9,16 @@ namespace backend.Controllers
     public class UploadController : ControllerBase
     {
         private readonly OpenAIService _openAI;
+        private readonly ResumeParser _parser;
 
-        public UploadController(OpenAIService openAI)
+        public UploadController(OpenAIService openAI, ResumeParser parser)
         {
             _openAI = openAI;
+            _parser = parser;
         }
 
         [HttpPost("analyze")]
-        public async Task<IActionResult> UploadAndAnalyze([FromForm] IFormFile file)
+        public async Task<IActionResult> Upload([FromForm] IFormFile file)
         {
             if (file == null || file.Length == 0)
                 return BadRequest("No file uploaded.");
@@ -25,26 +27,20 @@ namespace backend.Controllers
             if (!Directory.Exists(uploadsFolder))
                 Directory.CreateDirectory(uploadsFolder);
 
-            var filePath = Path.Combine(uploadsFolder, file.FileName);
+            var filePath = Path.Combine(uploadsFolder, Path.GetFileName(file.FileName));
 
-            using (var stream = System.IO.File.Create(filePath))
+            using (var stream = new FileStream(filePath, FileMode.Create))
             {
                 await file.CopyToAsync(stream);
             }
 
-            // For now: simply convert file to text placeholder
-            // You can integrate PDF or DOCX parsing later
-            string extractedText = $"Resume saved at: {filePath}";
+            // Extract text
+            var extractedText = _parser.ParseText(filePath);
 
+            // Call OpenAI service
             var analysis = await _openAI.AnalyzeResumeAsync(extractedText);
 
-            return Ok(new
-            {
-                success = true,
-                fileName = file.FileName,
-                analysis
-            });
+            return Ok(new { uploaded = true, fileName = file.FileName, analysis });
         }
     }
 }
-

@@ -1,47 +1,63 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
-using UglyToad.PdfPig;
+using System.Text;
+using System.Collections.Generic;
 using DocumentFormat.OpenXml.Packaging;
-using DocumentFormat.OpenXml.Wordprocessing;
+using UglyToad.PdfPig;
 
 namespace backend.Services
 {
     public class ResumeParser
     {
-        private readonly SkillExtractor _skillExtractor;
-
-        public ResumeParser(SkillExtractor skillExtractor)
+        public ResumeParser()
         {
-            _skillExtractor = skillExtractor;
         }
 
-        public List<string> ExtractSkillsFromResume(string filePath)
+        /// <summary>
+        /// Read file at path and return extracted plain text.
+        /// Supports PDF and DOCX (OpenXML). Falls back to raw text file read.
+        /// </summary>
+        public string ParseText(string filePath)
         {
-            string text = string.Empty;
+            if (!File.Exists(filePath)) return string.Empty;
 
-            if (filePath.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase))
+            try
             {
-                using var doc = PdfDocument.Open(filePath);
-                foreach (var page in doc.GetPages())
-                    text += "\n" + page.Text;
+                var ext = Path.GetExtension(filePath).ToLowerInvariant();
+                if (ext == ".pdf")
+                {
+                    var sb = new StringBuilder();
+                    using (var doc = PdfDocument.Open(filePath))
+                    {
+                        foreach (var page in doc.GetPages())
+                            sb.AppendLine(page.Text);
+                    }
+                    return sb.ToString();
+                }
+                else if (ext == ".docx")
+                {
+                    var sb = new StringBuilder();
+                    using (WordprocessingDocument wordDoc = WordprocessingDocument.Open(filePath, false))
+                    {
+                        var body = wordDoc.MainDocumentPart?.Document?.Body;
+                        if (body != null)
+                        {
+                            sb.AppendLine(body.InnerText);
+                        }
+                    }
+                    return sb.ToString();
+                }
+                else
+                {
+                    // fallback (txt etc)
+                    return File.ReadAllText(filePath);
+                }
             }
-            else if (filePath.EndsWith(".docx", StringComparison.OrdinalIgnoreCase))
+            catch
             {
-                using WordprocessingDocument wordDoc = WordprocessingDocument.Open(filePath, false);
-                var body = wordDoc.MainDocumentPart?.Document?.Body;
-                if (body != null)
-                    text = body.InnerText;
+                // on any parse error, return raw file contents as fallback
+                try { return File.ReadAllText(filePath); } catch { return string.Empty; }
             }
-            else
-            {
-                text = File.ReadAllText(filePath);
-            }
-
-            if (string.IsNullOrWhiteSpace(text))
-                text = File.ReadAllText(filePath);
-
-            return _skillExtractor.Extract(text);
         }
     }
 }

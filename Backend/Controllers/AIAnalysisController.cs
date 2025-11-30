@@ -21,8 +21,8 @@ namespace backend.Controllers
             if (request == null || string.IsNullOrWhiteSpace(request.ResumeText))
                 return BadRequest("ResumeText is required.");
 
-            var analysis = await _openAI.AnalyzeResumeAsync(request.ResumeText);
-            return Ok(new { success = true, analysis });
+            var result = await _openAI.AnalyzeResumeAsync(request.ResumeText);
+            return Ok(new { success = true, analysis = result });
         }
     }
 }

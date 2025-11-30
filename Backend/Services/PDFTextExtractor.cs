@@ -1,7 +1,7 @@
 using UglyToad.PdfPig;
 using UglyToad.PdfPig.Content;
 
-namespace Backend.Services
+namespace backend.Services
 {
     public class PDFTextExtractor
     {
