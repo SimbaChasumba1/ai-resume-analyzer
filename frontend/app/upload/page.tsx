@@ -2,7 +2,9 @@
 
 import { useState, useRef } from "react";
 import axios from "axios";
-import { buttonStyle } from "@/components/styles/buttonStyle";
+
+const BACKEND_URL = "http://localhost:5240/upload";
+
 export default function UploadPage() {
   const [file, setFile] = useState<File | null>(null);
   const [status, setStatus] = useState("");
@@ -14,13 +16,6 @@ export default function UploadPage() {
     if (f) setStatus(`Selected: ${f.name}`);
   };
 
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    setIsDragging(false);
-    const f = e.dataTransfer.files[0];
-    handleFileSelect(f || null);
-  };
-
   const onUpload = async () => {
     if (!file) {
       setStatus("Please select a PDF.");
@@ -29,18 +24,20 @@ export default function UploadPage() {
 
     try {
       setStatus("Uploading...");
-      const data = new FormData();
-      data.append("file", file);
 
-      const res = await axios.post("http://localhost:5240/upload", data, {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const res = await axios.post(BACKEND_URL, formData, {
         headers: { "Content-Type": "multipart/form-data" },
+        timeout: 10000
       });
 
       console.log("Upload response:", res.data);
       setStatus("Upload successful!");
     } catch (err) {
-      console.error(err);
-      setStatus("Upload failed.");
+      console.error("UPLOAD ERROR:", err);
+      setStatus("Upload failed. Backend is unreachable.");
     }
   };
 
@@ -49,7 +46,12 @@ export default function UploadPage() {
       <h1>Upload Resume</h1>
 
       <div
-        onDrop={handleDrop}
+        onDrop={(e) => {
+          e.preventDefault();
+          setIsDragging(false);
+          const f = e.dataTransfer.files[0];
+          handleFileSelect(f || null);
+        }}
         onDragOver={(e) => {
           e.preventDefault();
           setIsDragging(true);
@@ -80,7 +82,17 @@ export default function UploadPage() {
         <p style={{ marginTop: 10 }}>📄 {file.name}</p>
       )}
 
-      <button style={{ ...buttonStyle, marginTop: 20 }} onClick={onUpload}>
+      <button
+        onClick={onUpload}
+        style={{
+          marginTop: 20,
+          padding: "12px 22px",
+          background: "black",
+          color: "white",
+          borderRadius: 8,
+          cursor: "pointer",
+        }}
+      >
         Upload & Analyze
       </button>
 

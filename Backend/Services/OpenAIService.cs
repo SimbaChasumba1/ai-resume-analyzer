@@ -1,37 +1,35 @@
-using OpenAI;
-using OpenAI.Chat;
-using OpenAI.Models;
-using Microsoft.Extensions.Configuration;
+using System.Threading.Tasks;
+using OpenAI_API;
+using OpenAI_API.Completions;
 
 namespace backend.Services
 {
     public class OpenAIService
     {
-        private readonly OpenAIClient _client;
+        private readonly OpenAIAPI _api;
 
-        public OpenAIService(IConfiguration config)
+        public OpenAIService(string apiKey)
         {
-            var apiKey = config["OpenAI:ApiKey"];
             if (string.IsNullOrWhiteSpace(apiKey))
-                throw new ArgumentException("OpenAI API key is missing in configuration.");
+                throw new ArgumentException("API key is required", nameof(apiKey));
 
-            _client = new OpenAIClient(new OpenAIAuthentication(apiKey));
+            _api = new OpenAIAPI(apiKey);
         }
 
         public async Task<string> AnalyzeResumeAsync(string resumeText)
         {
-            var chatRequest = new ChatRequest()
+            if (string.IsNullOrWhiteSpace(resumeText))
+                return string.Empty;
+
+            var completionRequest = new CompletionRequest
             {
-                Model = Models.Gpt3_5Turbo,
-                Messages = new List<ChatMessage>
-                {
-                    new ChatMessage(ChatRole.User, resumeText)
-                }
+                Prompt = resumeText,
+                Model = "text-davinci-003",
+                MaxTokens = 500
             };
 
-            var response = await _client.ChatEndpoint.GetCompletionAsync(chatRequest);
-
-            return response.Choices[0].Message.Content;
+            var result = await _api.Completions.CreateCompletionAsync(completionRequest);
+            return result.Completions.Count > 0 ? result.Completions[0].Text : string.Empty;
         }
     }
 }
