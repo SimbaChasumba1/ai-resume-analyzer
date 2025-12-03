@@ -2,33 +2,19 @@ using backend.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Load OpenAI key
-string? apiKey = builder.Configuration["OpenAI:ApiKey"];
-
-// Register services
-builder.Services.AddSingleton(new OpenAIService(apiKey!));
+builder.Services.AddSingleton(new OpenAIService(
+    builder.Configuration["OPENAI_API_KEY"]
+));
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-
-// FIX CORS
-builder.Services.AddCors(options =>
+builder.Services.AddCors(o => o.AddDefaultPolicy(p =>
 {
-    options.AddPolicy("AllowFrontend",
-        policy => policy
-            .AllowAnyOrigin()
-            .AllowAnyMethod()
-            .AllowAnyHeader());
-});
+    p.AllowAnyHeader().AllowAnyMethod().AllowAnyOrigin();
+}));
 
 var app = builder.Build();
-
-app.UseCors("AllowFrontend");
-
-app.UseSwagger();
-app.UseSwaggerUI();
-
+app.UseCors();
 app.MapControllers();
-
 app.Run();
+

@@ -1,44 +1,40 @@
 "use client";
+
 import { useState } from "react";
-import { buttonStyle } from "@/components/styles/buttonStyle";
+import AuthForm from "@/components/AuthForm";
 
-
-export default function LoginPage() {
-  const [isLogin, setIsLogin] = useState(true);
-  const [email, setEmail] = useState("");
-  const [pw, setPw] = useState("");
-  const [status, setStatus] = useState("");
-
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setStatus(isLogin ? "Logging in..." : "Signing up...");
-    await new Promise((r) => setTimeout(r, 800));
-    setStatus(isLogin ? "Logged in (mock)" : "Account created (mock)");
-  };
+export default function AuthPage() {
+  const [mode, setMode] = useState<"login" | "signup">("login");
 
   return (
-    <main style={{ paddingTop: 120, display: "flex", justifyContent: "center" }}>
-      <div style={{ width: 380, background: "white", padding: 30, borderRadius: 12 }}>
-        <h2>{isLogin ? "Login" : "Sign up"}</h2>
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 px-4">
+      <div className="w-full max-w-md bg-white shadow-xl rounded-2xl p-8 border border-gray-100">
+        <h1 className="text-3xl font-bold text-center mb-6">
+          {mode === "login" ? "Welcome Back" : "Create Your Account"}
+        </h1>
 
-        <form onSubmit={submit} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" />
-          <input value={pw} onChange={(e) => setPw(e.target.value)} placeholder="Password" type="password" />
-
-          <button type="submit" style={buttonStyle}>
-            {isLogin ? "Login" : "Sign up"}
+        {/* Toggle */}
+        <div className="flex justify-center space-x-4 mb-6">
+          <button
+            className={`px-4 py-2 rounded-lg font-medium ${
+              mode === "login" ? "bg-black text-white" : "bg-gray-200"
+            }`}
+            onClick={() => setMode("login")}
+          >
+            Login
           </button>
-        </form>
-
-        <p style={{ marginTop: 12 }}>
-          {isLogin ? "No account?" : "Have an account?"}
-          <button onClick={() => setIsLogin(!isLogin)} style={{ marginLeft: 8 }}>
-            {isLogin ? "Sign up" : "Login"}
+          <button
+            className={`px-4 py-2 rounded-lg font-medium ${
+              mode === "signup" ? "bg-black text-white" : "bg-gray-200"
+            }`}
+            onClick={() => setMode("signup")}
+          >
+            Sign Up
           </button>
-        </p>
+        </div>
 
-        {status && <p>{status}</p>}
+        <AuthForm mode={mode} />
       </div>
-    </main>
+    </div>
   );
 }

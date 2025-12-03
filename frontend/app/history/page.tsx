@@ -1,9 +1,11 @@
 export default function HistoryPage() {
-  // placeholder for now
   return (
-    <main style={{ paddingTop: 110, maxWidth: 900, margin: "0 auto" }}>
-      <h1>History</h1>
-      <p>Saved analyses will appear here (Day 7: DB + auth).</p>
-    </main>
+    <div className="pt-24 max-w-3xl mx-auto">
+      <h1 className="text-3xl font-semibold mb-4">Your Past Analyses</h1>
+
+      <p className="text-gray-600">
+        History feature coming on Day 2.
+      </p>
+    </div>
   );
 }

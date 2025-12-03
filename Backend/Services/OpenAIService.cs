@@ -1,4 +1,3 @@
-using System.Threading.Tasks;
 using OpenAI_API;
 using OpenAI_API.Completions;
 
@@ -10,26 +9,20 @@ namespace backend.Services
 
         public OpenAIService(string apiKey)
         {
-            if (string.IsNullOrWhiteSpace(apiKey))
-                throw new ArgumentException("API key is required", nameof(apiKey));
-
             _api = new OpenAIAPI(apiKey);
         }
 
         public async Task<string> AnalyzeResumeAsync(string resumeText)
         {
-            if (string.IsNullOrWhiteSpace(resumeText))
-                return string.Empty;
-
-            var completionRequest = new CompletionRequest
+            var req = new CompletionRequest
             {
-                Prompt = resumeText,
+                Prompt = $"Analyze this resume and summarise it briefly for a recruiter:\n\n{resumeText}",
                 Model = "text-davinci-003",
-                MaxTokens = 500
+                MaxTokens = 400
             };
 
-            var result = await _api.Completions.CreateCompletionAsync(completionRequest);
-            return result.Completions.Count > 0 ? result.Completions[0].Text : string.Empty;
+            var result = await _api.Completions.CreateCompletionAsync(req);
+            return result.Completions[0].Text.Trim();
         }
     }
 }

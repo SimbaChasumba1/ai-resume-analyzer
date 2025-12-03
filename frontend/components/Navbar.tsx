@@ -1,31 +1,21 @@
-"use client";
 import Link from "next/link";
 
 export default function Navbar() {
   return (
-    <nav
-      style={{
-        width: "100%",
-        padding: "20px 40px",
-        background: "rgba(37, 99, 235, 0.15)", // blue tint
-        backdropFilter: "blur(10px)",
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        position: "fixed",
-        top: 0,
-        left: 0,
-        zIndex: 50,
-      }}
-    >
-      <Link href="/" style={{ fontSize: 22, fontWeight: 700 }}>
-        AI Resume Analyzer
-      </Link>
+    <nav className="fixed top-0 left-0 w-full backdrop-blur-xl bg-black/40 border-b border-white/10 z-50">
+      <div className="max-w-6xl mx-auto flex justify-between items-center px-6 py-4">
+        
+        <Link href="/" className="text-white text-2xl font-bold">
+          AI Resume Analyzer
+        </Link>
 
-      <div style={{ display: "flex", gap: 20 }}>
-        <Link href="/login">Login</Link>
-        <Link href="/signup">Sign Up</Link>
+        <div className="flex gap-6 text-white text-lg">
+          <Link href="/upload" className="hover:text-gray-300 transition">Upload</Link>
+          <Link href="/auth" className="hover:text-gray-300 transition">Login</Link>
+        </div>
+
       </div>
     </nav>
   );
 }
+

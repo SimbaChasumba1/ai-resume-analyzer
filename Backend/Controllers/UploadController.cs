@@ -1,4 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
+using backend.Services;
+using System.Text;
+using UglyToad.PdfPig;
 
 namespace backend.Controllers
 {
@@ -6,25 +9,41 @@ namespace backend.Controllers
     [Route("[controller]")]
     public class UploadController : ControllerBase
     {
+        private readonly OpenAIService _openAI;
+
+        public UploadController(OpenAIService openAI)
+        {
+            _openAI = openAI;
+        }
+
         [HttpPost]
         public async Task<IActionResult> Upload(IFormFile file)
         {
             if (file == null || file.Length == 0)
                 return BadRequest("No file uploaded.");
 
-            var uploadsPath = Path.Combine(Directory.GetCurrentDirectory(), "Uploads");
+            string text = ExtractPdf(file);
 
-            if (!Directory.Exists(uploadsPath))
-                Directory.CreateDirectory(uploadsPath);
+            var result = await _openAI.AnalyzeResumeAsync(text);
 
-            var filePath = Path.Combine(uploadsPath, file.FileName);
+            return Ok(new { success = true, analysis = result });
+        }
 
-            using (var stream = new FileStream(filePath, FileMode.Create))
+        private string ExtractPdf(IFormFile file)
+        {
+            using var ms = new MemoryStream();
+            file.CopyTo(ms);
+
+            StringBuilder sb = new();
+
+            using var pdf = PdfDocument.Open(ms);
+            foreach (var page in pdf.GetPages())
             {
-                await file.CopyToAsync(stream);
+                sb.AppendLine(page.Text);
             }
 
-            return Ok(new { message = "File uploaded successfully", file = file.FileName });
+            return sb.ToString();
         }
     }
 }
+

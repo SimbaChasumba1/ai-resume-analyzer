@@ -8,95 +8,83 @@ const BACKEND_URL = "http://localhost:5240/upload";
 export default function UploadPage() {
   const [file, setFile] = useState<File | null>(null);
   const [status, setStatus] = useState("");
-  const [isDragging, setIsDragging] = useState(false);
+  const [dragging, setDragging] = useState(false);
+
   const inputRef = useRef<HTMLInputElement | null>(null);
 
-  const handleFileSelect = (f: File | null) => {
-    setFile(f);
-    if (f) setStatus(`Selected: ${f.name}`);
+  const handleSelect = (file: File | null) => {
+    setFile(file);
+    if (file) setStatus(`Selected: ${file.name}`);
   };
 
-  const onUpload = async () => {
-    if (!file) {
-      setStatus("Please select a PDF.");
-      return;
-    }
+  const upload = async () => {
+    if (!file) return setStatus("Please select a PDF first.");
 
     try {
-      setStatus("Uploading...");
+      setStatus("Uploading…");
 
       const formData = new FormData();
       formData.append("file", file);
 
       const res = await axios.post(BACKEND_URL, formData, {
         headers: { "Content-Type": "multipart/form-data" },
-        timeout: 10000
       });
 
-      console.log("Upload response:", res.data);
-      setStatus("Upload successful!");
+      console.log(res.data);
+      setStatus("Uploaded! Awaiting analysis…");
     } catch (err) {
-      console.error("UPLOAD ERROR:", err);
-      setStatus("Upload failed. Backend is unreachable.");
+      console.error(err);
+      setStatus("Upload failed — backend unreachable.");
     }
   };
 
   return (
-    <div style={{ maxWidth: 600, margin: "120px auto", textAlign: "center" }}>
-      <h1>Upload Resume</h1>
+    <div className="min-h-screen flex flex-col items-center justify-center 
+      bg-gradient-to-br from-black via-gray-900 to-zinc-900 px-6">
 
-      <div
-        onDrop={(e) => {
-          e.preventDefault();
-          setIsDragging(false);
-          const f = e.dataTransfer.files[0];
-          handleFileSelect(f || null);
-        }}
-        onDragOver={(e) => {
-          e.preventDefault();
-          setIsDragging(true);
-        }}
-        onDragLeave={() => setIsDragging(false)}
-        onClick={() => inputRef.current?.click()}
-        style={{
-          border: "2px dashed gray",
-          padding: 40,
-          borderRadius: 12,
-          background: isDragging ? "#eef7ff" : "#f9f9f9",
-          cursor: "pointer",
-        }}
-      >
-        <input
-          type="file"
-          ref={inputRef}
-          style={{ display: "none" }}
-          accept="application/pdf"
-          onChange={(e) => handleFileSelect(e.target.files?.[0] || null)}
-        />
+      <div className="w-full max-w-xl bg-white/10 backdrop-blur-xl border border-white/10 
+        rounded-2xl shadow-2xl p-10 text-center">
 
-        <p><b>Click to select a PDF</b></p>
-        <p>or drag & drop here</p>
+        <h1 className="text-3xl font-bold text-white mb-6">Upload Your Resume</h1>
+
+        <div
+          onClick={() => inputRef.current?.click()}
+          onDrop={(e) => {
+            e.preventDefault();
+            setDragging(false);
+            handleSelect(e.dataTransfer.files[0] || null);
+          }}
+          onDragOver={(e) => {
+            e.preventDefault();
+            setDragging(true);
+          }}
+          onDragLeave={() => setDragging(false)}
+          className={`border-2 border-dashed rounded-2xl p-10 cursor-pointer transition 
+          ${dragging ? "border-white bg-white/10" : "border-gray-400/50"}`}
+        >
+          <input
+            type="file"
+            ref={inputRef}
+            className="hidden"
+            accept="application/pdf"
+            onChange={(e) => handleSelect(e.target.files?.[0] || null)}
+          />
+
+          <p className="text-white text-lg font-medium">
+            {file ? file.name : "Click or Drag Your PDF Here"}
+          </p>
+        </div>
+
+        <button
+          onClick={upload}
+          className="mt-6 w-full py-4 bg-white text-black rounded-xl font-semibold text-lg
+          hover:bg-gray-200 transition"
+        >
+          Upload & Analyze
+        </button>
+
+        {status && <p className="text-gray-300 mt-4">{status}</p>}
       </div>
-
-      {file && (
-        <p style={{ marginTop: 10 }}>📄 {file.name}</p>
-      )}
-
-      <button
-        onClick={onUpload}
-        style={{
-          marginTop: 20,
-          padding: "12px 22px",
-          background: "black",
-          color: "white",
-          borderRadius: 8,
-          cursor: "pointer",
-        }}
-      >
-        Upload & Analyze
-      </button>
-
-      {status && <p style={{ marginTop: 10 }}>{status}</p>}
     </div>
   );
 }
