@@ -1,39 +1,41 @@
-"use client";
+import * as React from 'react';
+import axios from 'axios';
 
-import { useState } from "react";
+export default function AuthForm() {
+  const [mode, setMode] = React.useState<'login'|'signup'>('login');
+  const [email, setEmail] = React.useState('');
+  const [password, setPassword] = React.useState('');
+  const [status, setStatus] = React.useState('');
 
-export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const submit = async () => {
+    if (!email || !password) return setStatus('Provide email and password');
+    setStatus('Working…');
+    try {
+      const endpoint = mode === 'login' ? '/api/auth/login' : '/api/auth/signup';
+      // Replace with your actual endpoints or frontend logic
+      await axios.post(endpoint, { email, password });
+      setStatus(mode === 'login' ? 'Signed in' : 'Account created');
+    } catch (err) {
+      console.error(err);
+      setStatus('Error (backend unreachable)');
+    }
+  };
 
   return (
-    <form className="flex flex-col gap-5">
-      <input
-        type="email"
-        placeholder="Email"
-        className="w-full p-4 rounded-xl bg-white/20 text-white placeholder-gray-300 
-         border border-white/20 focus:bg-white/30 outline-none transition"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-      />
+    <div className="auth-wrap">
+      <div className="auth-toggle">
+        <button className={`tab ${mode==='login'?'active':''}`} onClick={()=>setMode('login')}>Login</button>
+        <button className={`tab ${mode==='signup'?'active':''}`} onClick={()=>setMode('signup')}>Sign up</button>
+      </div>
 
-      <input
-        type="password"
-        placeholder="Password"
-        className="w-full p-4 rounded-xl bg-white/20 text-white placeholder-gray-300 
-         border border-white/20 focus:bg-white/30 outline-none transition"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-      />
-
-      <button
-        type="submit"
-        className="w-full py-4 bg-white text-black rounded-xl text-lg font-bold shadow 
-        hover:bg-gray-200 transition"
-      >
-        {mode === "login" ? "Login" : "Create Account"}
-      </button>
-    </form>
+      <div className="auth-form">
+        <input placeholder="Email" value={email} onChange={e=>setEmail(e.target.value)} />
+        <input placeholder="Password" type="password" value={password} onChange={e=>setPassword(e.target.value)} />
+        <div className="actions-row">
+          <button onClick={submit} className="btn primary">{mode === 'login' ? 'Sign in' : 'Create account'}</button>
+        </div>
+        {status && <div className="status">{status}</div>}
+      </div>
+    </div>
   );
 }
-

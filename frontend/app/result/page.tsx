@@ -1,25 +1,31 @@
-"use client";
-
-export default function ResultPage({ searchParams }: any) {
-  const data = searchParams.data
-    ? JSON.parse(decodeURIComponent(searchParams.data))
-    : null;
-
+export default function ResultsPage() {
   return (
-    <div className="pt-24 max-w-3xl mx-auto">
-      <h1 className="text-3xl font-bold">Analysis Result</h1>
+    <div className="container fade-in">
+      <h1 className="gradient-text" style={{ fontSize: "2.5rem", fontWeight: 800 }}>
+        Resume Analysis
+      </h1>
 
-      {!data && (
-        <p className="text-gray-500 mt-5">No analysis data found.</p>
-      )}
+      <div className="card" style={{ marginTop: "2rem" }}>
+        <h2 style={{ fontSize: "1.6rem", marginBottom: "1rem" }}>AI Summary</h2>
+        <p style={{ opacity: 0.8 }}>
+          {/* Replace with AI response */}
+          Your resume demonstrates strong experience in software development, with emphasis on backend architecture...
+        </p>
+      </div>
 
-      {data && (
-        <div className="bg-white mt-6 p-6 rounded-xl shadow">
-          <pre className="text-sm whitespace-pre-wrap">
-            {JSON.stringify(data, null, 2)}
-          </pre>
-        </div>
-      )}
+      <div className="card" style={{ marginTop: "2rem" }}>
+        <h2 style={{ fontSize: "1.6rem", marginBottom: "1rem" }}>Skill Breakdown</h2>
+        <ul style={{ opacity: 0.75, lineHeight: "1.7" }}>
+          <li>✔ Node.js — Advanced</li>
+          <li>✔ React — Intermediate</li>
+          <li>✔ System Design — Intermediate</li>
+          <li>✔ Cloud Infrastructure — Foundational</li>
+        </ul>
+      </div>
+
+      <button className="btn btn-primary" style={{ marginTop: "2rem" }}>
+        Download Full AI Report
+      </button>
     </div>
   );
 }

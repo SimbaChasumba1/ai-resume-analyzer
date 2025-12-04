@@ -1,128 +1,58 @@
-"use client";
+import * as React from 'react';
+import axios from 'axios';
 
-import { useState, useRef } from "react";
-import axios from "axios";
-import { useRouter } from "next/navigation";
+const BACKEND_URL = 'http://localhost:5240/upload';
 
 export default function UploadForm() {
-  const [file, setFile] = useState<File | null>(null);
-  const [status, setStatus] = useState("");
-  const [isDragging, setIsDragging] = useState(false);
-  const inputRef = useRef<HTMLInputElement | null>(null);
-  const router = useRouter();
+  const [file, setFile] = React.useState<File | null>(null);
+  const [status, setStatus] = React.useState('');
+  const inputRef = React.useRef<HTMLInputElement | null>(null);
+  const [dragging, setDragging] = React.useState(false);
 
-  const handleFileSelect = (f: File | null) => {
+  const handleSelect = (f: File | null) => {
     setFile(f);
     if (f) setStatus(`Selected: ${f.name}`);
   };
 
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    setIsDragging(false);
-    const f = e.dataTransfer.files[0];
-    handleFileSelect(f || null);
-  };
-
-  const onUpload = async () => {
-    if (!file) {
-      setStatus("Please select a PDF.");
-      return;
-    }
-
+  const upload = async () => {
+    if (!file) return setStatus('Please select a PDF.');
     try {
-      setStatus("Analyzing...");
+      setStatus('Uploading…');
       const formData = new FormData();
-      formData.append("file", file);
-
-      // Primary: call the AI analyze endpoint
-      const res = await axios.post("http://localhost:5240/ai/analyze", formData, {
-        headers: { "Content-Type": "multipart/form-data" }
+      formData.append('file', file);
+      const res = await axios.post(BACKEND_URL, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        timeout: 15000,
       });
-
-      // store result and navigate to analysis page
-      localStorage.setItem("analysis", res.data.analysis || "");
-      localStorage.setItem("text", res.data.text || "");
-      router.push("/resume-analysis");
+      // try to display server response (analysis)
+      console.log('upload res', res.data);
+      setStatus('Upload successful — analysis queued.');
     } catch (err) {
       console.error(err);
-      setStatus("Upload failed.");
+      setStatus('Upload failed — backend unreachable.');
     }
-  };
-
-  // Optional: raw upload (persist file to disk)
-  const rawUpload = async () => {
-    if (!file) return setStatus("No file selected");
-    try {
-      const fd = new FormData();
-      fd.append("file", file);
-      await axios.post("http://localhost:5240/upload", fd, { headers: { "Content-Type": "multipart/form-data" } });
-      setStatus("File saved to server.");
-    } catch (e) {
-      console.error(e);
-      setStatus("Raw upload failed.");
-    }
-  };
-
-  const containerStyle: React.CSSProperties = {
-    maxWidth: 600,
-    margin: "120px auto 50px auto",
-    background: "white",
-    padding: 40,
-    borderRadius: 12,
-    boxShadow: "0 4px 20px rgba(0,0,0,0.07)",
-    textAlign: "center"
   };
 
   return (
-    <div style={containerStyle}>
-      <h1 style={{ fontSize: 30, fontWeight: 700, marginBottom: 10 }}>Upload Your Resume</h1>
-
-      <p style={{ fontSize: 16, color: "#555", marginBottom: 25 }}>Upload a PDF and get an AI-powered resume analysis</p>
-
+    <div className="card upload-card">
+      <h2 className="title">Upload Resume</h2>
       <div
-        style={{
-          border: "2px dashed #999",
-          padding: 40,
-          borderRadius: 12,
-          cursor: "pointer",
-          marginBottom: 20,
-          transition: "0.2s",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          background: isDragging ? "#f0f8ff" : "#fafafa",
-          borderColor: isDragging ? "#2563eb" : "#999"
-        }}
-        onDrop={handleDrop}
-        onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
-        onDragLeave={() => setIsDragging(false)}
+        className={`dropzone ${dragging ? 'dragging' : ''}`}
         onClick={() => inputRef.current?.click()}
+        onDrop={(e) => { e.preventDefault(); setDragging(false); handleSelect(e.dataTransfer.files[0] || null); }}
+        onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+        onDragLeave={() => setDragging(false)}
       >
-        <input ref={inputRef} type="file" accept="application/pdf" style={{ display: "none" }} onChange={(e) => handleFileSelect(e.target.files?.[0] || null)} />
-        <p style={{ fontSize: 18, margin: 0 }}><strong>Click to select a PDF</strong></p>
-        <p style={{ fontSize: 14, color: "#777", marginTop: 5 }}>or drag & drop here</p>
+        <input ref={inputRef} type="file" accept="application/pdf" className="hidden" onChange={e => handleSelect(e.target.files?.[0] || null)} />
+        <p className="muted">{file ? file.name : 'Click or drag a PDF here to upload'}</p>
       </div>
 
-      {file && (<p style={{ marginTop: 10, fontSize: 15 }}>📄 {file.name}</p>)}
-
-      <div style={{ display: "flex", gap: 10, justifyContent: "center", marginTop: 15 }}>
-        <button style={buttonStyle} onClick={() => inputRef.current?.click()}>Choose File</button>
-        <button style={buttonStyle} onClick={onUpload} disabled={!file}>Analyze Resume</button>
-        <button style={{ ...buttonStyle, background: "#666" }} onClick={rawUpload} disabled={!file}>Save File</button>
+      <div className="actions-row">
+        <button onClick={upload} className="btn primary">Upload & Analyze</button>
+        <button onClick={() => { setFile(null); setStatus(''); }} className="btn outline">Clear</button>
       </div>
 
-      {status && <p style={{ marginTop: 15, fontSize: 14, color: "#333" }}>{status}</p>}
+      {status && <div className="status">{status}</div>}
     </div>
   );
 }
-
-const buttonStyle: React.CSSProperties = {
-  padding: "12px 20px",
-  background: "black",
-  color: "white",
-  borderRadius: 8,
-  cursor: "pointer",
-  border: "none",
-  fontWeight: 600,
-  minWidth: 120
-};
