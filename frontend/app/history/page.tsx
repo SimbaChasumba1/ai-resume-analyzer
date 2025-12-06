@@ -1,10 +1,9 @@
 export default function HistoryPage() {
   return (
-    <div className="pt-24 max-w-3xl mx-auto">
-      <h1 className="text-3xl font-semibold mb-4">Your Past Analyses</h1>
-
-      <p className="text-gray-600">
-        History feature coming on Day 2.
+    <div className="max-w-4xl mx-auto mt-20 text-center">
+      <h1 className="text-4xl font-bold mb-4">History</h1>
+      <p className="text-white/60">
+        Your previously analyzed resumes will show here.
       </p>
     </div>
   );
