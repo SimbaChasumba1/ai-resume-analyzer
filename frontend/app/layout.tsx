@@ -1,28 +1,18 @@
 import "./globals.css";
-import Link from "next/link";
+import Navbar from "@/components/Navbar";
+import React from "react";
 
 export const metadata = {
   title: "AIResumeAnalyzer",
+  description: "Upload and analyze resumes with AI — polished portfolio demo",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className="bg-gray-900 text-white min-h-screen">
-        <header className="flex items-center justify-between px-8 py-4 bg-gray-800 shadow-md">
-          <Link href="/">
-            <h1 className="text-2xl font-bold text-indigo-400">AIResume</h1>
-          </Link>
-          <nav className="space-x-6">
-            <Link href="/login" className="hover:text-indigo-300">
-              Login
-            </Link>
-            <Link href="/signup" className="hover:text-indigo-300">
-              Signup
-            </Link>
-          </nav>
-        </header>
-        <main>{children}</main>
+      <body className="min-h-screen bg-gradient-to-br from-[#05060a] via-[#081025] to-[#0a1220] text-slate-100 antialiased">
+        <Navbar />
+        <main className="max-w-6xl mx-auto px-6 py-12">{children}</main>
       </body>
     </html>
   );

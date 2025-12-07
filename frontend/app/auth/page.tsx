@@ -1,13 +1,11 @@
-import * as React from 'react';
-import AuthForm from '@/components/AuthForm';
+"use client";
+
+import AuthForm from "@/components/AuthForm";
 
 export default function AuthPage() {
   return (
-    <div className="centered">
-      <div className="card auth-card">
-        <AuthForm />
-      </div>
+    <div className="flex items-center justify-center min-h-screen bg-gray-50">
+      <AuthForm onClose={() => {}} initialMode="login" />
     </div>
   );
 }
-
