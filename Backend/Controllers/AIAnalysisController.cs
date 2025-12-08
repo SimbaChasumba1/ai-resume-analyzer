@@ -1,28 +1,40 @@
-using Microsoft.AspNetCore.Mvc;
+using backend.Data;
 using backend.Models;
-using backend.Services;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
-namespace backend.Controllers
+namespace Backend.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("[controller]")]
     public class AIAnalysisController : ControllerBase
     {
-        private readonly OpenAIService _openAI;
+        private readonly AppDbContext _db;
 
-        public AIAnalysisController(OpenAIService openAI)
+        public AIAnalysisController(AppDbContext db)
         {
-            _openAI = openAI;
+            _db = db;
         }
 
         [HttpPost("analyze")]
-        public async Task<IActionResult> Analyze([FromBody] ResumeAnalysisRequest request)
+        public async Task<IActionResult> AnalyzeResume([FromBody] ResumeAnalysisRequest request)
         {
-            if (request == null || string.IsNullOrWhiteSpace(request.ResumeText))
-                return BadRequest("ResumeText is required.");
+            if (string.IsNullOrWhiteSpace(request.ResumeText))
+                return BadRequest("Resume text is required.");
 
-            var result = await _openAI.AnalyzeResumeAsync(request.ResumeText);
-            return Ok(new { success = true, analysis = result });
+            // Fake placeholder analysis (replace with your AI)
+            string analysis = $"Analysis for: {request.FileName}";
+
+            var saved = new ResumeAnalysis
+            {
+                ResumeText = request.ResumeText,
+                AnalysisResult = analysis
+            };
+
+            _db.ResumeAnalyses.Add(saved);
+            await _db.SaveChangesAsync();
+
+            return Ok(new { message = "Analysis complete", analysis });
         }
     }
 }

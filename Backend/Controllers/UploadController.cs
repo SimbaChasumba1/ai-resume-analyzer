@@ -1,49 +1,46 @@
 using Microsoft.AspNetCore.Mvc;
-using backend.Services;
-using System.Text;
-using UglyToad.PdfPig;
+using backend.Data;
+using backend.Models;
 
-namespace backend.Controllers
+[ApiController]
+[Route("upload")]
+public class UploadController : ControllerBase
 {
-    [ApiController]
-    [Route("[controller]")]
-    public class UploadController : ControllerBase
+    private readonly AppDbContext _db;
+    private readonly IWebHostEnvironment _env;
+
+    public UploadController(AppDbContext db, IWebHostEnvironment env)
     {
-        private readonly OpenAIService _openAI;
+        _db = db;
+        _env = env;
+    }
 
-        public UploadController(OpenAIService openAI)
+    [HttpPost]
+    public async Task<IActionResult> UploadResume(IFormFile file)
+    {
+        if (file == null || file.Length == 0)
+            return BadRequest("No file provided.");
+
+        var resume = new ResumeUpload
         {
-            _openAI = openAI;
+            Id = Guid.NewGuid(),
+            UserId = Guid.Empty, // TODO: Replace with logged-in user
+            FilePath = file.FileName
+        };
+
+        _db.ResumeUploads.Add(resume);
+        await _db.SaveChangesAsync();
+
+        // Save to disk
+        var savePath = Path.Combine(_env.ContentRootPath, "uploads", resume.Id + ".pdf");
+        using (var stream = System.IO.File.Create(savePath))
+        {
+            await file.CopyToAsync(stream);
         }
 
-        [HttpPost]
-        public async Task<IActionResult> Upload(IFormFile file)
-        {
-            if (file == null || file.Length == 0)
-                return BadRequest("No file uploaded.");
-
-            string text = ExtractPdf(file);
-
-            var result = await _openAI.AnalyzeResumeAsync(text);
-
-            return Ok(new { success = true, analysis = result });
-        }
-
-        private string ExtractPdf(IFormFile file)
-        {
-            using var ms = new MemoryStream();
-            file.CopyTo(ms);
-
-            StringBuilder sb = new();
-
-            using var pdf = PdfDocument.Open(ms);
-            foreach (var page in pdf.GetPages())
-            {
-                sb.AppendLine(page.Text);
-            }
-
-            return sb.ToString();
-        }
+        // Process with AI next (Day 3)
+        return Ok(new { resumeId = resume.Id, message = "Upload saved" });
     }
 }
+
 

@@ -3,13 +3,40 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model User {
-  id       String @id @default(cuid())
-  name     String
-  email    String @unique
-  password String
-  createdAt DateTime @default(now())
+  id        String            @id @default(uuid())
+  name      String?
+  email     String?           @unique
+  password  String?
+  createdAt DateTime          @default(now())
+
+  uploads   ResumeUpload[]
+}
+
+model ResumeUpload {
+  id         String      @id @default(uuid())
+  userId     String
+  fileUrl    String
+  status     String      @default("pending")
+  createdAt  DateTime    @default(now())
+
+  analysis   AIAnalysis?
+
+  user       User        @relation(fields: [userId], references: [id])
+}
+
+model AIAnalysis {
+  id            String   @id @default(uuid())
+  resumeId      String   @unique
+  summary       String?
+  skills        String?
+  weaknesses    String?
+  recommendations String?
+  createdAt     DateTime @default(now())
+
+  resume        ResumeUpload @relation(fields: [resumeId], references: [id])
 }

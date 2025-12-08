@@ -1,20 +1,50 @@
+using backend.Data;
 using backend.Services;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Add OpenAIService as singleton
 builder.Services.AddSingleton(new OpenAIService(
-    builder.Configuration["OPENAI_API_KEY"]
+    builder.Configuration["OPENAI_API_KEY"]!
 ));
 
+// Add EF Core with Npgsql
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"))
+);
+
+// Add Controllers
 builder.Services.AddControllers();
+
+// Add Swagger (optional)
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddCors(o => o.AddDefaultPolicy(p =>
+builder.Services.AddSwaggerGen();
+
+// Configure CORS
+builder.Services.AddCors(options =>
 {
-    p.AllowAnyHeader().AllowAnyMethod().AllowAnyOrigin();
-}));
+    options.AddDefaultPolicy(policy =>
+    {
+        policy.AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowAnyOrigin();
+    });
+});
 
 var app = builder.Build();
-app.UseCors();
-app.MapControllers();
-app.Run();
 
+// Use Swagger (optional)
+app.UseSwagger();
+app.UseSwaggerUI();
+
+// Enable CORS
+app.UseCors();
+
+// Use HTTPS redirection
+app.UseHttpsRedirection();
+
+// Map controllers
+app.MapControllers();
+
+app.Run();

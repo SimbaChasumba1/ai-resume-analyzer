@@ -1,11 +1,28 @@
 @import "tailwindcss";
 
 /* Small design tokens to make the theme cohesive */
-:root{
+:root {
   --accent-1: #7c3aed; /* indigo */
   --accent-2: #06b6d4; /* cyan */
   --muted: #94a3b8;
+  --theme-bg: #0b0f25; /* midnight blue page background */
+  --theme-box-bg: #1a1f3a; /* upload box background */
 }
 
-/* Minimal overrides */
-html,body,#__next { height: 100%; }
+/* Ensure the page fills the viewport */
+html, body, #__next {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  background-color: var(--theme-bg);
+}
+
+/* Optional: body text defaults */
+body {
+  color: white;
+  font-family: 'Inter', sans-serif;
+}
+
+/* Minimal Tailwind overrides */
+.bg-theme { background-color: var(--theme-bg) !important; }
+.bg-box { background-color: var(--theme-box-bg) !important; }
