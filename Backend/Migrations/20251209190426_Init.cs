@@ -12,9 +12,6 @@ namespace backend.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropTable(
-                name: "Resumes");
-
             migrationBuilder.CreateTable(
                 name: "ResumeAnalyses",
                 columns: table => new
@@ -112,20 +109,6 @@ namespace backend.Migrations
 
             migrationBuilder.DropTable(
                 name: "User");
-
-            migrationBuilder.CreateTable(
-                name: "Resumes",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "int", nullable: false),
-                    FilePath = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    OriginalFileName = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    UploadedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Resumes", x => x.Id);
-                });
         }
     }
 }
