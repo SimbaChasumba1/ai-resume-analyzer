@@ -5,14 +5,18 @@ namespace backend.Models
     public class ResumeUpload
     {
         public Guid Id { get; set; }
-        public Guid UserId { get; set; }
-        public string FilePath { get; set; } = string.Empty;
-        public string Status { get; set; } = "pending";
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
+        public Guid UserId { get; set; }
         public User User { get; set; }
 
-        // One-to-one
-        public AIAnalysis? Analysis { get; set; }
+        public string FileName { get; set; }
+        public string FilePath { get; set; }
+
+
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public string Status { get; set; } = "Uploaded";
+
+        public AIAnalysis Analysis { get; set; }
     }
 }
+
