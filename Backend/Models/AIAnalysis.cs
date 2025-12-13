@@ -1,19 +1,12 @@
-using System;
-
-namespace backend.Models
+public class AIAnalysis
 {
-    public class AIAnalysis
-    {
-        public Guid Id { get; set; }
+public int Id { get; set; }
+public string Summary { get; set; } = string.Empty;
+public string Strengths { get; set; } = string.Empty;
+public string Weaknesses { get; set; } = string.Empty;
+public string Suggestions { get; set; } = string.Empty;
 
-        // This is the foreign key — AIAnalysis is dependent.
-        public Guid ResumeUploadId { get; set; }
 
-        public string Summary { get; set; }
-        public string Skills { get; set; }
-        public string Weaknesses { get; set; }
-        public string Recommendations { get; set; }
-
-        public ResumeUpload Resume { get; set; }
-    }
+public int ResumeUploadId { get; set; }
+public ResumeUpload ResumeUpload { get; set; } = null!;
 }
