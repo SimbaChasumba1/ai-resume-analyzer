@@ -1,13 +1,19 @@
+using System;
+
+
+namespace backend.Models;
+
+
 public class ResumeUpload
 {
-public int Id { get; set; }
+public Guid Id { get; set; }
 public string FileName { get; set; } = string.Empty;
 public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-public string Status { get; set; } = "Queued";
+public string Status { get; set; } = "Uploaded";
 
 
-public int UserId { get; set; }
-public User User { get; set; } = null!;
+public Guid UserId { get; set; }
+public User? User { get; set; }
 
 
 public AIAnalysis? Analysis { get; set; }
