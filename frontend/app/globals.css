@@ -1,28 +1,55 @@
 @import "tailwindcss";
 
-/* Small design tokens to make the theme cohesive */
+/* Design tokens */
 :root {
   --accent-1: #7c3aed; /* indigo */
   --accent-2: #06b6d4; /* cyan */
   --muted: #94a3b8;
-  --theme-bg: #0b0f25; /* midnight blue page background */
-  --theme-box-bg: #1a1f3a; /* upload box background */
+  --theme-bg: #0b0f25;
+  --theme-box-bg: #1a1f3a;
 }
 
-/* Ensure the page fills the viewport */
-html, body, #__next {
+/* Full height layout */
+html,
+body,
+#__next {
   height: 100%;
   margin: 0;
   padding: 0;
   background-color: var(--theme-bg);
 }
 
-/* Optional: body text defaults */
+/* Base typography */
 body {
   color: white;
-  font-family: 'Inter', sans-serif;
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
 }
 
-/* Minimal Tailwind overrides */
-.bg-theme { background-color: var(--theme-bg) !important; }
-.bg-box { background-color: var(--theme-box-bg) !important; }
+/* =========================
+   Reusable UI primitives
+   ========================= */
+
+.input {
+  @apply w-full p-3 mb-4 rounded-xl bg-[#0F1015] border border-white/10 text-white outline-none focus:ring-2 focus:ring-indigo-500;
+}
+
+.btn-primary {
+  @apply px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 transition font-semibold;
+}
+
+.card {
+  @apply p-6 rounded-2xl bg-white/5 border border-white/10 hover:border-indigo-500 transition;
+}
+
+.section-title {
+  @apply text-xl font-semibold mb-2;
+}
+
+.bg-theme {
+  background-color: var(--theme-bg);
+}
+
+.bg-box {
+  background-color: var(--theme-box-bg);
+}
