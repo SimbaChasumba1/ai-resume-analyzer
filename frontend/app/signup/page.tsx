@@ -1,38 +1,96 @@
 "use client";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { API } from "@/lib/auth";
 
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { authFetch, setAuthToken } from "@/lib/auth";
 
 export default function SignupPage() {
-const router = useRouter();
-const [email, setEmail] = useState("");
-const [password, setPassword] = useState("");
-const [name, setName] = useState("");
+  const router = useRouter();
 
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-const submit = async (e: React.FormEvent) => {
-e.preventDefault();
-await fetch(`${API}/auth/register`, {
-method: "POST",
-headers: { "Content-Type": "application/json" },
-body: JSON.stringify({ name, email, password })
-});
+  async function handleSignup(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
 
+    try {
+      const res = await authFetch(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:5240"}/auth/signup`,
+        {
+          method: "POST",
+          body: JSON.stringify({ email, password }),
+        }
+      );
 
-router.push("/login");
-};
+      if (!res.ok) {
+        const msg = await res.text();
+        throw new Error(msg || "Signup failed");
+      }
 
+      const data: { token: string } = await res.json();
+      setAuthToken(data.token);
 
-return (
-<div className="min-h-screen flex items-center justify-center">
-<form onSubmit={submit} className="w-full max-w-md bg-white/5 p-8 rounded-2xl border border-white/10">
-<h1 className="text-2xl font-bold mb-6">Create account</h1>
-<input value={name} onChange={e => setName(e.target.value)} placeholder="Full name" className="input" />
-<input value={email} onChange={e => setEmail(e.target.value)} placeholder="Email" className="input" />
-<input value={password} onChange={e => setPassword(e.target.value)} type="password" placeholder="Password" className="input" />
-<button className="btn-primary w-full mt-4">Sign up</button>
-</form>
-</div>
-);
+      router.push("/dashboard");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-theme">
+      <form
+        onSubmit={handleSignup}
+        className="w-full max-w-md bg-box p-8 rounded-2xl shadow-xl space-y-6"
+      >
+        <h1 className="text-3xl font-bold text-center">Create account</h1>
+
+        {error && (
+          <div className="bg-red-500/10 text-red-400 text-sm p-3 rounded-lg">
+            {error}
+          </div>
+        )}
+
+        <div className="space-y-4">
+          <input
+            type="email"
+            placeholder="Email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full px-4 py-3 rounded-lg bg-black/20 border border-white/10 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          />
+
+          <input
+            type="password"
+            placeholder="Password"
+            required
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="w-full px-4 py-3 rounded-lg bg-black/20 border border-white/10 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          />
+        </div>
+
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full py-3 rounded-lg bg-indigo-600 hover:bg-indigo-500 transition font-semibold disabled:opacity-50"
+        >
+          {loading ? "Creating account..." : "Sign up"}
+        </button>
+
+        <p className="text-sm text-center text-muted">
+          Already have an account?{" "}
+          <a href="/login" className="text-indigo-400 hover:underline">
+            Log in
+          </a>
+        </p>
+      </form>
+    </div>
+  );
 }

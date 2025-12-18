@@ -1,36 +1,38 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using Microsoft.IdentityModel.Tokens;
+using backend.Models;
 
-namespace backend.Services
+namespace backend.Services;
+
+public class JwtService : IJwtService
 {
-    public class JwtService
+    private readonly IConfiguration _config;
+
+    public JwtService(IConfiguration config)
     {
-        private readonly string _key;
+        _config = config;
+    }
 
-        public JwtService(IConfiguration config)
+    public string Generate(User user)
+    {
+        var claims = new[]
         {
-            _key = config["Jwt:Key"] ?? "dev-secret-key";
-        }
+            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+            new Claim(ClaimTypes.Email, user.Email)
+        };
 
-        public string GenerateToken(string userId)
-        {
-            var keyBytes = Encoding.UTF8.GetBytes(_key);
+        var key = new SymmetricSecurityKey(
+            Encoding.UTF8.GetBytes(_config["Jwt:Key"]!)
+        );
 
-            var token = new JwtSecurityToken(
-                claims: new[]
-                {
-                    new Claim("userId", userId)
-                },
-                expires: DateTime.UtcNow.AddHours(1),
-                signingCredentials: new SigningCredentials(
-                    new SymmetricSecurityKey(keyBytes),
-                    SecurityAlgorithms.HmacSha256
-                )
-            );
+        var token = new JwtSecurityToken(
+            claims: claims,
+            expires: DateTime.UtcNow.AddDays(7),
+            signingCredentials: new SigningCredentials(key, SecurityAlgorithms.HmacSha256)
+        );
 
-            return new JwtSecurityTokenHandler().WriteToken(token);
-        }
+        return new JwtSecurityTokenHandler().WriteToken(token);
     }
 }

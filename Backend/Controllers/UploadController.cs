@@ -1,34 +1,27 @@
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using backend.Data;
+using backend.Models;
+
+namespace backend.Controllers;
+
 [ApiController]
 [Route("upload")]
+[Authorize]
 public class UploadController : ControllerBase
 {
-private readonly AppDbContext _db;
+    private readonly AppDbContext _db;
 
+    public UploadController(AppDbContext db)
+    {
+        _db = db;
+    }
 
-public UploadController(AppDbContext db)
-{
-_db = db;
-}
-
-
-[HttpPost]
-public async Task<IActionResult> Upload(IFormFile file)
-{
-if (file == null || file.Length == 0)
-return BadRequest("Invalid file");
-
-
-var resume = new ResumeUpload
-{
-FileName = file.FileName,
-UserId = Guid.Empty // replace with JWT user later
-};
-
-
-_db.ResumeUploads.Add(resume);
-await _db.SaveChangesAsync();
-
-
-return Ok(new { resume.Id });
-}
+    [HttpPost]
+    public IActionResult UploadResume([FromBody] ResumeUpload upload)
+    {
+        _db.ResumeUploads.Add(upload);
+        _db.SaveChanges();
+        return Ok(upload);
+    }
 }

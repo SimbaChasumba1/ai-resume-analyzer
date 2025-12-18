@@ -1,21 +1,26 @@
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using backend.Data;
+
+namespace backend.Controllers;
+
 [ApiController]
 [Route("analysis")]
+[Authorize]
 public class AIAnalysisController : ControllerBase
 {
-private readonly AppDbContext _db;
+    private readonly AppDbContext _db;
 
+    public AIAnalysisController(AppDbContext db)
+    {
+        _db = db;
+    }
 
-public AIAnalysisController(AppDbContext db)
-{
-_db = db;
-}
-
-
-[HttpGet("{resumeId}")]
-public IActionResult Get(Guid resumeId)
-{
-var analysis = _db.AIAnalyses.FirstOrDefault(a => a.ResumeUploadId == resumeId);
-if (analysis == null) return NotFound();
-return Ok(analysis);
-}
+    [HttpGet("{id}")]
+    public IActionResult GetAnalysis(int id)
+    {
+        var analysis = _db.AIAnalyses.Find(id);
+        if (analysis == null) return NotFound();
+        return Ok(analysis);
+    }
 }

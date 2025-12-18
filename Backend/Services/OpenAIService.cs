@@ -1,28 +1,37 @@
-using OpenAI_API;
-using OpenAI_API.Completions;
+using System.Net.Http.Headers;
+using System.Text;
+using System.Text.Json;
 
 namespace backend.Services
 {
     public class OpenAIService
     {
-        private readonly OpenAIAPI _api;
+        private readonly HttpClient _http = new();
 
-        public OpenAIService(string apiKey)
+        public async Task<string> AnalyzeResume(string resumeText)
         {
-            _api = new OpenAIAPI(apiKey);
-        }
+            var apiKey = Environment.GetEnvironmentVariable("OPENAI_API_KEY");
 
-        public async Task<string> AnalyzeResumeAsync(string resumeText)
-        {
-            var req = new CompletionRequest
+            _http.DefaultRequestHeaders.Authorization =
+                new AuthenticationHeaderValue("Bearer", apiKey);
+
+            var body = new
             {
-                Prompt = $"Analyze this resume and summarise it briefly for a recruiter:\n\n{resumeText}",
-                Model = "text-davinci-003",
-                MaxTokens = 400
+                model = "gpt-4o-mini",
+                messages = new[]
+                {
+                    new { role = "system", content = "You are a professional resume reviewer." },
+                    new { role = "user", content = resumeText }
+                }
             };
 
-            var result = await _api.Completions.CreateCompletionAsync(req);
-            return result.Completions[0].Text.Trim();
+            var res = await _http.PostAsync(
+                "https://api.openai.com/v1/chat/completions",
+                new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json")
+            );
+
+            var json = await res.Content.ReadAsStringAsync();
+            return json;
         }
     }
 }

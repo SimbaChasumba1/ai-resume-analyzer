@@ -5,17 +5,14 @@ namespace backend.Services
 {
     public class PDFTextExtractor
     {
-        public async Task<string> ExtractTextAsync(IFormFile file)
+        public string ExtractText(string filePath)
         {
-            using var ms = new MemoryStream();
-            await file.CopyToAsync(ms);
-            ms.Position = 0;
+            using var document = PdfDocument.Open(filePath);
+            var text = "";
 
-            string text = "";
-            using (var pdf = PdfDocument.Open(ms))
+            foreach (Page page in document.GetPages())
             {
-                foreach (var page in pdf.GetPages())
-                    text += page.Text + "\n";
+                text += page.Text + "\n";
             }
 
             return text;
