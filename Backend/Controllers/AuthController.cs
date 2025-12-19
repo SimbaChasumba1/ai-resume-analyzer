@@ -1,9 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using BCrypt.Net;
 using backend.Data;
 using backend.Models;
 using backend.Services;
-using backend.DTOs;
-using BCrypt.Net;
 
 namespace backend.Controllers;
 
@@ -20,11 +20,11 @@ public class AuthController : ControllerBase
         _jwt = jwt;
     }
 
-    [HttpPost("signup")]
-    public IActionResult Register(RegisterDto dto)
+    [HttpPost("register")]
+    public async Task<IActionResult> Register(RegisterDto dto)
     {
-        if (_db.Users.Any(u => u.Email == dto.Email))
-            return BadRequest("User exists");
+        if (await _db.Users.AnyAsync(u => u.Email == dto.Email))
+            return BadRequest("Email already exists");
 
         var user = new User
         {
@@ -33,20 +33,25 @@ public class AuthController : ControllerBase
         };
 
         _db.Users.Add(user);
-        _db.SaveChanges();
+        await _db.SaveChangesAsync();
 
-        var token = _jwt.Generate(user);
+        var token = _jwt.GenerateToken(user);
+
         return Ok(new { token });
     }
 
     [HttpPost("login")]
-    public IActionResult Login(LoginDto dto)
+    public async Task<IActionResult> Login(LoginDto dto)
     {
-        var user = _db.Users.FirstOrDefault(u => u.Email == dto.Email);
-        if (user == null || !BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash))
+        var user = await _db.Users.FirstOrDefaultAsync(u => u.Email == dto.Email);
+        if (user == null)
             return Unauthorized();
 
-        var token = _jwt.Generate(user);
+        if (!BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash))
+            return Unauthorized();
+
+        var token = _jwt.GenerateToken(user);
+
         return Ok(new { token });
     }
 }
