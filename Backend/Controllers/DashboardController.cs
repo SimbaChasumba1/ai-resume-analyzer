@@ -25,7 +25,9 @@ public class DashboardController : ControllerBase
         return Ok(new
         {
             totalResumes = resumes.Count,
-            latestUpload = resumes.OrderByDescending(r => r.CreatedAt).FirstOrDefault()
+            latestUpload = resumes
+                .OrderByDescending(r => r.CreatedAt)
+                .FirstOrDefault()
         });
     }
 }

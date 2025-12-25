@@ -7,18 +7,31 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// ================= DATABASE =================
+
+var jwtSecret = builder.Configuration["Jwt:Key"];
+if (string.IsNullOrWhiteSpace(jwtSecret))
+{
+    throw new Exception("JWT Secret is missing. Set Jwt:Key in appsettings.json or environment variables.");
+}
+
+// DB
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"))
 );
 
-// ================= SERVICES =================
+// Services
 builder.Services.AddScoped<IJwtService, JwtService>();
-builder.Services.AddScoped<PDFTextExtractor>();
 builder.Services.AddScoped<ResumeParser>();
-builder.Services.AddScoped<OpenAIService>();
+builder.Services.AddScoped<PDFTextExtractor>();
 
-// ================= AUTH =================
+// Controllers
+builder.Services.AddControllers();
+
+// Swagger
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
+// Auth
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -26,42 +39,20 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         {
             ValidateIssuer = false,
             ValidateAudience = false,
+            ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
             IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!)
+                Encoding.UTF8.GetBytes(jwtSecret)
             )
         };
     });
 
 builder.Services.AddAuthorization();
 
-// ================= MVC =================
-builder.Services.AddControllers();
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-
-// ================= CORS =================
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowFrontend", policy =>
-    {
-        policy
-            .AllowAnyHeader()
-            .AllowAnyMethod()
-            .AllowCredentials()
-            .WithOrigins(
-                "http://localhost:3000",
-                "https://your-vercel-app.vercel.app"
-            );
-    });
-});
-
 var app = builder.Build();
 
 app.UseSwagger();
 app.UseSwaggerUI();
-
-app.UseCors("AllowFrontend");
 
 app.UseAuthentication();
 app.UseAuthorization();

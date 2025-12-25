@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using BCrypt.Net;
 using backend.Data;
+using backend.DTOs;
 using backend.Models;
 using backend.Services;
 

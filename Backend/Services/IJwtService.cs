@@ -4,5 +4,5 @@ namespace backend.Services;
 
 public interface IJwtService
 {
-    string Generate(User user);
+    string GenerateToken(User user);
 }

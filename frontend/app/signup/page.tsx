@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { authFetch, setAuthToken } from "@/lib/auth";
+import { setAuthToken } from "@/lib/auth";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -18,10 +18,11 @@ export default function SignupPage() {
     setError(null);
 
     try {
-      const res = await authFetch(
+      const res = await fetch(
         `${process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:5240"}/auth/signup`,
         {
           method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email, password }),
         }
       );
@@ -36,7 +37,7 @@ export default function SignupPage() {
 
       router.push("/dashboard");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
+      setError(err instanceof Error ? err.message : "Signup failed");
     } finally {
       setLoading(false);
     }
@@ -56,30 +57,28 @@ export default function SignupPage() {
           </div>
         )}
 
-        <div className="space-y-4">
-          <input
-            type="email"
-            placeholder="Email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full px-4 py-3 rounded-lg bg-black/20 border border-white/10 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          />
+        <input
+          type="email"
+          placeholder="Email"
+          required
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          className="w-full px-4 py-3 rounded-lg bg-black/20 border border-white/10"
+        />
 
-          <input
-            type="password"
-            placeholder="Password"
-            required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full px-4 py-3 rounded-lg bg-black/20 border border-white/10 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          />
-        </div>
+        <input
+          type="password"
+          placeholder="Password"
+          required
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          className="w-full px-4 py-3 rounded-lg bg-black/20 border border-white/10"
+        />
 
         <button
           type="submit"
           disabled={loading}
-          className="w-full py-3 rounded-lg bg-indigo-600 hover:bg-indigo-500 transition font-semibold disabled:opacity-50"
+          className="w-full py-3 rounded-lg bg-indigo-600 hover:bg-indigo-500 font-semibold disabled:opacity-50"
         >
           {loading ? "Creating account..." : "Sign up"}
         </button>

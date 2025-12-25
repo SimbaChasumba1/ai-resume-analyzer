@@ -1,17 +1,17 @@
+using System.Text.RegularExpressions;
+
 namespace backend.Services
 {
     public class ResumeParser
     {
-        private readonly PDFTextExtractor _extractor;
-
-        public ResumeParser(PDFTextExtractor extractor)
+        public string ParseText(string rawText)
         {
-            _extractor = extractor;
-        }
+            if (string.IsNullOrWhiteSpace(rawText))
+                return string.Empty;
 
-        public string Parse(string filePath)
-        {
-            return _extractor.ExtractText(filePath);
+            // Normalize whitespace
+            var cleaned = Regex.Replace(rawText, @"\s+", " ").Trim();
+            return cleaned;
         }
     }
 }
