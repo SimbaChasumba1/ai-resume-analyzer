@@ -1,3 +1,12 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace backend.DTOs;
 
-public record RegisterDto(string Email, string Password);
+public class RegisterDto
+{
+    [Required]
+    public string Email { get; set; }
+
+    [Required]
+    public string Password { get; set; }
+}

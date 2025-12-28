@@ -1,58 +1,62 @@
+using System.Text;
 using backend.Data;
 using backend.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-
-var jwtSecret = builder.Configuration["Jwt:Key"];
-if (string.IsNullOrWhiteSpace(jwtSecret))
+// -------------------- CONFIG --------------------
+var jwtKey = builder.Configuration["Jwt:Key"];
+if (string.IsNullOrWhiteSpace(jwtKey))
 {
-    throw new Exception("JWT Secret is missing. Set Jwt:Key in appsettings.json or environment variables.");
+    throw new Exception("JWT Key is missing from appsettings.json");
 }
 
-// DB
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"))
-);
-
-// Services
-builder.Services.AddScoped<IJwtService, JwtService>();
-builder.Services.AddScoped<ResumeParser>();
-builder.Services.AddScoped<PDFTextExtractor>();
-
-// Controllers
+// -------------------- SERVICES --------------------
 builder.Services.AddControllers();
 
-// Swagger
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// Auth
+builder.Services.AddScoped<IJwtService, JwtService>();
+
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
         options.TokenValidationParameters = new TokenValidationParameters
         {
-            ValidateIssuer = false,
-            ValidateAudience = false,
+            ValidateIssuer = true,
+            ValidateAudience = true,
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+            ValidAudience = builder.Configuration["Jwt:Audience"],
             IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(jwtSecret)
+                Encoding.UTF8.GetBytes(jwtKey!)
             )
         };
     });
 
-builder.Services.AddAuthorization();
+// ✅ CRITICAL: Allow frontend to talk to backend
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("Frontend", policy =>
+    {
+        policy
+            .AllowAnyOrigin()
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
+});
 
 var app = builder.Build();
 
-app.UseSwagger();
-app.UseSwaggerUI();
+// -------------------- MIDDLEWARE --------------------
+
+
+app.UseCors("Frontend");
 
 app.UseAuthentication();
 app.UseAuthorization();

@@ -3,7 +3,8 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { setAuthToken } from "@/lib/auth";
 
-const API_BASE = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:5240";
+const API_BASE =
+  process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:5240";
 
 export default function AuthForm({
   initialMode = "login",
@@ -27,11 +28,13 @@ export default function AuthForm({
 
     try {
       const endpoint =
-        mode === "login" ? "/auth/login" : "/auth/register";
+        mode === "login" ? "/auth/login" : "/auth/signup";
 
       const res = await fetch(`${API_BASE}${endpoint}`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({ email, password }),
       });
 
@@ -41,7 +44,6 @@ export default function AuthForm({
       }
 
       const data: { token: string } = await res.json();
-
       setAuthToken(data.token);
 
       onClose();

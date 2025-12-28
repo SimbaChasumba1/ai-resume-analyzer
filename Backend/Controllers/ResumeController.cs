@@ -1,24 +1,39 @@
+using backend.Data;
+using backend.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using backend.Services;
 
-namespace backend.Controllers
+namespace backend.Controllers;
+
+[ApiController]
+[Route("resume")]
+[Authorize]
+public class ResumeController : ControllerBase
 {
-    [ApiController]
-    [Route("api/[controller]")]
-    public class ResumeController : ControllerBase
+    private readonly AppDbContext _db;
+
+    public ResumeController(AppDbContext db)
     {
-        private readonly ResumeParser _parser;
+        _db = db;
+    }
 
-        public ResumeController(ResumeParser parser)
-        {
-            _parser = parser;
-        }
+    [HttpPost("upload")]
+    public async Task<IActionResult> Upload(IFormFile file)
+    {
+        if (file == null || file.Length == 0)
+            return BadRequest("No file uploaded");
 
-        [HttpPost("parse")]
-        public IActionResult ParseResume([FromBody] string text)
+        var userId = User.Claims.First(c => c.Type == "sub").Value;
+
+        var resume = new ResumeUpload
         {
-            var result = _parser.ParseText(text);
-            return Ok(new { parsed = result });
-        }
+            UserId = Guid.Parse(userId),
+            FileName = file.FileName
+        };
+
+        _db.ResumeUploads.Add(resume);
+        await _db.SaveChangesAsync();
+
+        return Ok();
     }
 }

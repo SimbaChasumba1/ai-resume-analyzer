@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using BCrypt.Net;
 using backend.Data;
 using backend.DTOs;
 using backend.Models;
@@ -21,8 +20,8 @@ public class AuthController : ControllerBase
         _jwt = jwt;
     }
 
-    [HttpPost("register")]
-    public async Task<IActionResult> Register(RegisterDto dto)
+    [HttpPost("signup")]
+    public async Task<IActionResult> Signup(RegisterDto dto)
     {
         if (await _db.Users.AnyAsync(u => u.Email == dto.Email))
             return BadRequest("Email already exists");
@@ -37,7 +36,6 @@ public class AuthController : ControllerBase
         await _db.SaveChangesAsync();
 
         var token = _jwt.GenerateToken(user);
-
         return Ok(new { token });
     }
 
@@ -46,13 +44,12 @@ public class AuthController : ControllerBase
     {
         var user = await _db.Users.FirstOrDefaultAsync(u => u.Email == dto.Email);
         if (user == null)
-            return Unauthorized();
+            return Unauthorized("Invalid credentials");
 
         if (!BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash))
-            return Unauthorized();
+            return Unauthorized("Invalid credentials");
 
         var token = _jwt.GenerateToken(user);
-
         return Ok(new { token });
     }
 }
