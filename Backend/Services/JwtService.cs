@@ -7,11 +7,6 @@ using Microsoft.IdentityModel.Tokens;
 
 namespace backend.Services;
 
-public interface IJwtService
-{
-    string GenerateToken(User user);
-}
-
 public class JwtService : IJwtService
 {
     private readonly IConfiguration _config;
@@ -23,9 +18,15 @@ public class JwtService : IJwtService
 
     public string GenerateToken(User user)
     {
-        var key = _config["Jwt:Key"]!;
-        var issuer = _config["Jwt:Issuer"]!;
-        var audience = _config["Jwt:Audience"]!;
+        var key = _config["Jwt:Key"];
+        var issuer = _config["Jwt:Issuer"];
+        var audience = _config["Jwt:Audience"];
+
+        if (string.IsNullOrWhiteSpace(key))
+            throw new Exception("JWT Key is missing");
+
+        var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key));
+        var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
 
         var claims = new[]
         {
@@ -33,17 +34,12 @@ public class JwtService : IJwtService
             new Claim(JwtRegisteredClaimNames.Email, user.Email)
         };
 
-        var creds = new SigningCredentials(
-            new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key)),
-            SecurityAlgorithms.HmacSha256
-        );
-
         var token = new JwtSecurityToken(
             issuer,
             audience,
             claims,
             expires: DateTime.UtcNow.AddDays(7),
-            signingCredentials: creds
+            signingCredentials: credentials
         );
 
         return new JwtSecurityTokenHandler().WriteToken(token);

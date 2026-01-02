@@ -7,20 +7,19 @@ using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// -------------------- CONFIG --------------------
-var jwtKey = builder.Configuration["Jwt:Key"];
-if (string.IsNullOrWhiteSpace(jwtKey))
-{
-    throw new Exception("JWT Key is missing from appsettings.json");
-}
-
-// -------------------- SERVICES --------------------
-builder.Services.AddControllers();
-
+// DB
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+// Controllers
+builder.Services.AddControllers();
+
+// JWT
 builder.Services.AddScoped<IJwtService, JwtService>();
+
+var jwtKey = builder.Configuration["Jwt:Key"]!;
+var jwtIssuer = builder.Configuration["Jwt:Issuer"];
+var jwtAudience = builder.Configuration["Jwt:Audience"];
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -31,32 +30,33 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateAudience = true,
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
-            ValidIssuer = builder.Configuration["Jwt:Issuer"],
-            ValidAudience = builder.Configuration["Jwt:Audience"],
+            ValidIssuer = jwtIssuer,
+            ValidAudience = jwtAudience,
             IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(jwtKey!)
+                Encoding.UTF8.GetBytes(jwtKey)
             )
         };
     });
 
-// ✅ CRITICAL: Allow frontend to talk to backend
+builder.Services.AddAuthorization();
+
+builder.Services.AddScoped<ResumeParser>();
+
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("Frontend", policy =>
+    options.AddPolicy("AllowFrontend", policy =>
     {
         policy
-            .AllowAnyOrigin()
             .AllowAnyHeader()
-            .AllowAnyMethod();
+            .AllowAnyMethod()
+            .AllowCredentials()
+            .WithOrigins("http://localhost:3000");
     });
 });
 
 var app = builder.Build();
 
-// -------------------- MIDDLEWARE --------------------
-
-
-app.UseCors("Frontend");
+app.UseCors("AllowFrontend");
 
 app.UseAuthentication();
 app.UseAuthorization();
@@ -64,3 +64,4 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+

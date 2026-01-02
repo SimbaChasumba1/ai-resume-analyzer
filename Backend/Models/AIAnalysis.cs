@@ -1,18 +1,22 @@
 using System;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace backend.Models
 {
     public class AIAnalysis
     {
+        [Key]
         public Guid Id { get; set; }
 
-        public Guid ResumeUploadId { get; set; }
+        [Required]
+        public string ResumeUploadId { get; set; }  // FK to ResumeUpload
 
-        public string ResultJson { get; set; } = string.Empty;
+        [ForeignKey("ResumeUploadId")]
+        public ResumeUpload ResumeUpload { get; set; } = null!;
+
+        public string Result { get; set; } = string.Empty;
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-
-        // Navigation
-        public ResumeUpload Resume { get; set; } = null!;
     }
 }

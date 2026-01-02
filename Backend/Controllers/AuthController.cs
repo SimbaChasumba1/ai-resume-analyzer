@@ -4,6 +4,7 @@ using backend.Data;
 using backend.DTOs;
 using backend.Models;
 using backend.Services;
+using BCrypt.Net;
 
 namespace backend.Controllers;
 
@@ -21,7 +22,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("signup")]
-    public async Task<IActionResult> Signup(RegisterDto dto)
+    public async Task<IActionResult> Signup([FromBody] RegisterDto dto)
     {
         if (await _db.Users.AnyAsync(u => u.Email == dto.Email))
             return BadRequest("Email already exists");
@@ -40,11 +41,10 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("login")]
-    public async Task<IActionResult> Login(LoginDto dto)
+    public async Task<IActionResult> Login([FromBody] LoginDto dto)
     {
         var user = await _db.Users.FirstOrDefaultAsync(u => u.Email == dto.Email);
-        if (user == null)
-            return Unauthorized("Invalid credentials");
+        if (user == null) return Unauthorized("Invalid credentials");
 
         if (!BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash))
             return Unauthorized("Invalid credentials");

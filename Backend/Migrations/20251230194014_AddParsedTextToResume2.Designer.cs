@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using backend.Data;
@@ -11,9 +12,11 @@ using backend.Data;
 namespace backend.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251230194014_AddParsedTextToResume2")]
+    partial class AddParsedTextToResume2
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -38,14 +41,9 @@ namespace backend.Migrations
                     b.Property<Guid>("ResumeUploadId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid>("ResumeUploadId1")
-                        .HasColumnType("uuid");
-
                     b.HasKey("Id");
 
                     b.HasIndex("ResumeUploadId");
-
-                    b.HasIndex("ResumeUploadId1");
 
                     b.ToTable("AIAnalyses");
                 });
@@ -59,15 +57,11 @@ namespace backend.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("ExtractedText")
-                        .IsRequired()
-                        .HasColumnType("text");
-
                     b.Property<string>("FileName")
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("FilePath")
+                    b.Property<string>("ParsedText")
                         .IsRequired()
                         .HasColumnType("text");
 
@@ -100,24 +94,21 @@ namespace backend.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("Email")
+                        .IsUnique();
+
                     b.ToTable("Users");
                 });
 
             modelBuilder.Entity("backend.Models.AIAnalysis", b =>
                 {
-                    b.HasOne("backend.Models.ResumeUpload", null)
-                        .WithMany()
+                    b.HasOne("backend.Models.ResumeUpload", "Resume")
+                        .WithMany("Analyses")
                         .HasForeignKey("ResumeUploadId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("backend.Models.ResumeUpload", "ResumeUpload")
-                        .WithMany()
-                        .HasForeignKey("ResumeUploadId1")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("ResumeUpload");
+                    b.Navigation("Resume");
                 });
 
             modelBuilder.Entity("backend.Models.ResumeUpload", b =>
@@ -129,6 +120,11 @@ namespace backend.Migrations
                         .IsRequired();
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("backend.Models.ResumeUpload", b =>
+                {
+                    b.Navigation("Analyses");
                 });
 
             modelBuilder.Entity("backend.Models.User", b =>

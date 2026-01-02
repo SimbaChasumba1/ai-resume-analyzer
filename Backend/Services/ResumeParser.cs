@@ -1,17 +1,22 @@
-using System.Text.RegularExpressions;
+using System.Text;
+using UglyToad.PdfPig;
 
-namespace backend.Services
+namespace backend.Services;
+
+public class ResumeParser
 {
-    public class ResumeParser
+    public string Parse(byte[] pdfBytes)
     {
-        public string ParseText(string rawText)
-        {
-            if (string.IsNullOrWhiteSpace(rawText))
-                return string.Empty;
+        using var stream = new MemoryStream(pdfBytes);
+        using var document = PdfDocument.Open(stream);
 
-            // Normalize whitespace
-            var cleaned = Regex.Replace(rawText, @"\s+", " ").Trim();
-            return cleaned;
+        var sb = new StringBuilder();
+
+        foreach (var page in document.GetPages())
+        {
+            sb.AppendLine(page.Text);
         }
+
+        return sb.ToString();
     }
 }
