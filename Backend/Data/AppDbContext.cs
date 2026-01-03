@@ -18,18 +18,15 @@ namespace backend.Data
         {
             base.OnModelCreating(modelBuilder);
 
-            // One-to-one ResumeUpload → AIAnalysis
+            // One-to-one: ResumeUpload <-> AIAnalysis (GUID FK -> GUID PK)
             modelBuilder.Entity<ResumeUpload>()
                 .HasOne(r => r.Analysis)
                 .WithOne(a => a.ResumeUpload)
-                .HasForeignKey<AIAnalysis>(a => a.ResumeUploadId);
+                .HasForeignKey<AIAnalysis>(a => a.ResumeUploadId)
+                .OnDelete(DeleteBehavior.Cascade);
 
-            // Ensure User → ResumeUploads relationship
-            modelBuilder.Entity<User>()
-                .HasMany(u => u.ResumeUploads)
-                .WithOne(r => r.User)
-                .HasForeignKey(r => r.UserId);
+            // User -> ResumeUpload handled by convention via ResumeUpload.UserId
+            // (no navigation required on User)
         }
     }
 }
-

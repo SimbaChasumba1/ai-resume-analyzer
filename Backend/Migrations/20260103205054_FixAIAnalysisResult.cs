@@ -1,43 +1,28 @@
 ﻿using System;
 using Microsoft.EntityFrameworkCore.Migrations;
-using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
 namespace backend.Migrations
 {
     /// <inheritdoc />
-    public partial class Init : Migration
+    public partial class FixAIAnalysisResult : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
-                name: "ResumeAnalyses",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    ResumeText = table.Column<string>(type: "text", nullable: false),
-                    AnalysisResult = table.Column<string>(type: "text", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_ResumeAnalyses", x => x.Id);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "User",
+                name: "Users",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    Email = table.Column<string>(type: "text", nullable: true),
-                    Name = table.Column<string>(type: "text", nullable: true)
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    Email = table.Column<string>(type: "text", nullable: false),
+                    PasswordHash = table.Column<string>(type: "text", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_User", x => x.Id);
+                    table.PrimaryKey("PK_Users", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -45,18 +30,19 @@ namespace backend.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    UserId = table.Column<Guid>(type: "uuid", nullable: false),
+                    FileName = table.Column<string>(type: "text", nullable: false),
                     FilePath = table.Column<string>(type: "text", nullable: false),
-                    Status = table.Column<string>(type: "text", nullable: false),
+                    ExtractedText = table.Column<string>(type: "text", nullable: false),
+                    UserId = table.Column<Guid>(type: "uuid", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_ResumeUploads", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_ResumeUploads_User_UserId",
+                        name: "FK_ResumeUploads_Users_UserId",
                         column: x => x.UserId,
-                        principalTable: "User",
+                        principalTable: "Users",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -66,27 +52,25 @@ namespace backend.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    ResumeId = table.Column<Guid>(type: "uuid", nullable: false),
-                    Summary = table.Column<string>(type: "text", nullable: false),
-                    Skills = table.Column<string>(type: "text", nullable: false),
-                    Weaknesses = table.Column<string>(type: "text", nullable: false),
-                    Recommendations = table.Column<string>(type: "text", nullable: false)
+                    ResumeUploadId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Result = table.Column<string>(type: "text", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_AIAnalyses", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_AIAnalyses_ResumeUploads_ResumeId",
-                        column: x => x.ResumeId,
+                        name: "FK_AIAnalyses_ResumeUploads_ResumeUploadId",
+                        column: x => x.ResumeUploadId,
                         principalTable: "ResumeUploads",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateIndex(
-                name: "IX_AIAnalyses_ResumeId",
+                name: "IX_AIAnalyses_ResumeUploadId",
                 table: "AIAnalyses",
-                column: "ResumeId",
+                column: "ResumeUploadId",
                 unique: true);
 
             migrationBuilder.CreateIndex(
@@ -102,13 +86,10 @@ namespace backend.Migrations
                 name: "AIAnalyses");
 
             migrationBuilder.DropTable(
-                name: "ResumeAnalyses");
-
-            migrationBuilder.DropTable(
                 name: "ResumeUploads");
 
             migrationBuilder.DropTable(
-                name: "User");
+                name: "Users");
         }
     }
 }

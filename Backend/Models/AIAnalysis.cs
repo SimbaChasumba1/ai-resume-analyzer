@@ -7,14 +7,17 @@ namespace backend.Models
     public class AIAnalysis
     {
         [Key]
-        public Guid Id { get; set; }
+        public Guid Id { get; set; } = Guid.NewGuid();
 
+        // FK must match ResumeUpload.Id type (Guid)
         [Required]
-        public string ResumeUploadId { get; set; }  // FK to ResumeUpload
+        public Guid ResumeUploadId { get; set; }
 
-        [ForeignKey("ResumeUploadId")]
+        [ForeignKey(nameof(ResumeUploadId))]
         public ResumeUpload ResumeUpload { get; set; } = null!;
 
+        
+        [Required]
         public string Result { get; set; } = string.Empty;
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

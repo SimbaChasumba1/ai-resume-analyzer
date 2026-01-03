@@ -12,8 +12,8 @@ using backend.Data;
 namespace backend.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260102092752_AddExtractedText")]
-    partial class AddExtractedText
+    [Migration("20260103205054_FixAIAnalysisResult")]
+    partial class FixAIAnalysisResult
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -34,21 +34,17 @@ namespace backend.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("ResultJson")
+                    b.Property<string>("Result")
                         .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<Guid>("ResumeUploadId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid>("ResumeUploadId1")
-                        .HasColumnType("uuid");
-
                     b.HasKey("Id");
 
-                    b.HasIndex("ResumeUploadId");
-
-                    b.HasIndex("ResumeUploadId1");
+                    b.HasIndex("ResumeUploadId")
+                        .IsUnique();
 
                     b.ToTable("AIAnalyses");
                 });
@@ -108,15 +104,9 @@ namespace backend.Migrations
 
             modelBuilder.Entity("backend.Models.AIAnalysis", b =>
                 {
-                    b.HasOne("backend.Models.ResumeUpload", null)
-                        .WithMany()
-                        .HasForeignKey("ResumeUploadId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.HasOne("backend.Models.ResumeUpload", "ResumeUpload")
-                        .WithMany()
-                        .HasForeignKey("ResumeUploadId1")
+                        .WithOne("Analysis")
+                        .HasForeignKey("backend.Models.AIAnalysis", "ResumeUploadId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -126,7 +116,7 @@ namespace backend.Migrations
             modelBuilder.Entity("backend.Models.ResumeUpload", b =>
                 {
                     b.HasOne("backend.Models.User", "User")
-                        .WithMany("Resumes")
+                        .WithMany("ResumeUploads")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -134,9 +124,14 @@ namespace backend.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("backend.Models.ResumeUpload", b =>
+                {
+                    b.Navigation("Analysis");
+                });
+
             modelBuilder.Entity("backend.Models.User", b =>
                 {
-                    b.Navigation("Resumes");
+                    b.Navigation("ResumeUploads");
                 });
 #pragma warning restore 612, 618
         }
