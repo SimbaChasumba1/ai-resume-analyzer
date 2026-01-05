@@ -2,7 +2,7 @@
 
 
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 
 import axios from "axios";
 
@@ -10,9 +10,7 @@ import { useRouter } from "next/navigation";
 
 
 
-const API_BASE =
-
-  process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:5240";
+const API_BASE = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:5240";
 
 
 
@@ -30,17 +28,9 @@ interface AuthFormProps {
 
 
 
-export default function AuthForm({
-
-  initialMode = "login",
-
-  onClose,
-
-}: AuthFormProps) {
+export default function AuthForm({ initialMode = "login", onClose }: AuthFormProps) {
 
   const router = useRouter();
-
-
 
   const [mode, setMode] = useState<Mode>(initialMode);
 
@@ -54,19 +44,7 @@ export default function AuthForm({
 
 
 
-  useEffect(() => {
-
-    setMode(initialMode);
-
-  }, [initialMode]);
-
-
-
   const submit = async () => {
-
-    setStatus(null);
-
-
 
     if (!email || !password) {
 
@@ -80,43 +58,17 @@ export default function AuthForm({
 
     setLoading(true);
 
-
-
     try {
 
-      const endpoint =
+      const endpoint = mode === "signup" ? "/auth/signup" : "/auth/login";
 
-        mode === "signup" ? "/auth/signup" : "/auth/login";
-
-
-
-      const res = await axios.post(
-
-        `${API_BASE}${endpoint}`,
-
-        { email, password },
-
-        {
-
-          headers: { "Content-Type": "application/json" },
-
-          timeout: 15000,
-
-        }
-
-      );
+      const res = await axios.post(`${API_BASE}${endpoint}`, { email, password });
 
 
 
       const token = res.data?.token;
 
-
-
-      if (!token) {
-
-        throw new Error("No token returned from server");
-
-      }
+      if (!token) throw new Error("No token returned");
 
 
 
@@ -124,25 +76,7 @@ export default function AuthForm({
 
 
 
-      setStatus(
-
-        mode === "signup"
-
-          ? "Signup successful. Redirecting..."
-
-          : "Login successful. Redirecting..."
-
-      );
-
-
-
-      // 🔑 CLOSE MODAL
-
       onClose?.();
-
-
-
-      // 🔑 REDIRECT USER
 
       router.push("/upload");
 
@@ -150,25 +84,11 @@ export default function AuthForm({
 
     } catch (err: any) {
 
-      console.error("AUTH ERROR:", err);
+      console.error(err);
 
+      if (axios.isAxiosError(err)) setStatus(err.response?.data ?? "Authentication failed");
 
-
-      if (axios.isAxiosError(err)) {
-
-        setStatus(
-
-          err.response?.data?.message ??
-
-            "Authentication failed"
-
-        );
-
-      } else {
-
-        setStatus("Authentication failed");
-
-      }
+      else setStatus("Authentication failed");
 
     } finally {
 
@@ -208,8 +128,6 @@ export default function AuthForm({
 
         />
 
-
-
         <input
 
           type="password"
@@ -236,15 +154,7 @@ export default function AuthForm({
 
         >
 
-          {loading
-
-            ? "Please wait..."
-
-            : mode === "login"
-
-            ? "Login"
-
-            : "Sign Up"}
+          {loading ? "Please wait..." : mode === "login" ? "Login" : "Sign Up"}
 
         </button>
 
@@ -258,13 +168,7 @@ export default function AuthForm({
 
               Don’t have an account?{" "}
 
-              <button
-
-                onClick={() => setMode("signup")}
-
-                className="text-indigo-400 hover:underline"
-
-              >
+              <button onClick={() => setMode("signup")} className="text-indigo-400 hover:underline">
 
                 Sign up
 
@@ -278,13 +182,7 @@ export default function AuthForm({
 
               Already have an account?{" "}
 
-              <button
-
-                onClick={() => setMode("login")}
-
-                className="text-indigo-400 hover:underline"
-
-              >
+              <button onClick={() => setMode("login")} className="text-indigo-400 hover:underline">
 
                 Login
 
@@ -298,15 +196,7 @@ export default function AuthForm({
 
 
 
-        {status && (
-
-          <div className="text-center text-sm text-slate-300">
-
-            {status}
-
-          </div>
-
-        )}
+        {status && <div className="text-center text-sm text-slate-300">{status}</div>}
 
       </div>
 

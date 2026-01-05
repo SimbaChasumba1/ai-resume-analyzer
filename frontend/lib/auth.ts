@@ -11,3 +11,21 @@ export function logout() {
   localStorage.removeItem("token");
   window.location.href = "/";
 }
+
+/**
+ * Fetch helper that automatically attaches Authorization header
+ */
+export async function authFetch(
+  input: RequestInfo,
+  init: RequestInit = {}
+) {
+  const token = getToken();
+
+  return fetch(input, {
+    ...init,
+    headers: {
+      ...(init.headers || {}),
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  });
+}

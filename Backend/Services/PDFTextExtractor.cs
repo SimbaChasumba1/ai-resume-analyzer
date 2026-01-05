@@ -1,21 +1,52 @@
 using UglyToad.PdfPig;
-using UglyToad.PdfPig.Content;
 
-namespace backend.Services
+
+
+namespace backend.Services;
+
+
+
+public interface IPdfTextExtractor
+
 {
-    public class PDFTextExtractor
-    {
-        public string ExtractText(string filePath)
-        {
-            using var document = PdfDocument.Open(filePath);
-            var text = "";
 
-            foreach (Page page in document.GetPages())
-            {
-                text += page.Text + "\n";
-            }
+    string ExtractText(Stream pdfStream);
 
-            return text;
-        }
-    }
 }
+
+
+
+public class PdfTextExtractor : IPdfTextExtractor
+
+{
+
+    public string ExtractText(Stream pdfStream)
+
+    {
+
+        using var document = PdfDocument.Open(pdfStream);
+
+        var text = "";
+
+
+
+        foreach (var page in document.GetPages())
+
+        {
+
+            text += page.Text + "\n";
+
+        }
+
+
+
+        return text.Trim();
+
+    }
+
+}
+
+
+
+
+

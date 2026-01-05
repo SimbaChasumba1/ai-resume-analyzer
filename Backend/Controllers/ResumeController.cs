@@ -1,89 +1,154 @@
+using System.Security.Claims;
+using System.Text.Json;
 using backend.Data;
 using backend.Models;
+using backend.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;  // Add logging support
 
 namespace backend.Controllers
 {
     [ApiController]
     [Route("api/resume")]
-    [Authorize]
     public class ResumeController : ControllerBase
     {
         private readonly AppDbContext _db;
-        private readonly IWebHostEnvironment _env;
+        private readonly IPdfTextExtractor _pdf;
+        private readonly IResumeAnalysisService _ai;
+        private readonly ILogger<ResumeController> _logger; // Logger injection
 
-        public ResumeController(AppDbContext db, IWebHostEnvironment env)
+        // Constructor with Logger injection
+        public ResumeController(
+            AppDbContext db,
+            IPdfTextExtractor pdf,
+            IResumeAnalysisService ai,
+            ILogger<ResumeController> logger  // Logger parameter
+        )
         {
             _db = db;
-            _env = env;
+            _pdf = pdf;
+            _ai = ai;
+            _logger = logger;  // Assigning logger
         }
 
+        // 🔹 STEP 4 — UPLOAD + ANALYZE
+        [Authorize]
         [HttpPost("upload")]
         public async Task<IActionResult> Upload(IFormFile file)
         {
+            // Check if a file is uploaded
             if (file == null || file.Length == 0)
-                return BadRequest("No file uploaded");
-
-            // Get current user ID from JWT claims
-            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (userIdClaim == null)
-                return Unauthorized();
-
-            if (!Guid.TryParse(userIdClaim, out var userId))
-                return Unauthorized("Invalid user ID");
-
-            // Ensure uploads directory exists
-            var uploadsDir = Path.Combine(_env.ContentRootPath, "uploads");
-            Directory.CreateDirectory(uploadsDir);
-
-            // Save file
-            var fileName = $"{Guid.NewGuid()}_{file.FileName}";
-            var filePath = Path.Combine(uploadsDir, fileName);
-
-            await using (var stream = new FileStream(filePath, FileMode.Create))
             {
-                await file.CopyToAsync(stream);
+                _logger.LogWarning("No file uploaded.");
+                return BadRequest("No file uploaded");
             }
 
-            // Create resume entity
-            var resume = new ResumeUpload
+            // Retrieve current user ID from JWT claims
+            var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+
+            string resumeText;
+            try
             {
-                Id = Guid.NewGuid(),
-                FileName = file.FileName,
-                FilePath = filePath,
-                ExtractedText = "", // filled later by AI
-                UserId = userId // Guid type
+                // Extract text from the PDF
+                using (var stream = file.OpenReadStream())
+                {
+                    resumeText = _pdf.ExtractText(stream);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error extracting text from resume.");
+                return StatusCode(500, "Failed to extract text from the PDF file.");
+            }
+
+            // Perform AI analysis
+            ResumeAnalysisResult analysis;
+            try
+            {
+                analysis = await _ai.AnalyzeAsync(resumeText);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error analyzing resume text.");
+                return StatusCode(500, "AI analysis failed.");
+            }
+
+            // Create a new entity to store the analysis results
+            var entity = new AIAnalysis
+            {
+                UserId = userId,
+                ResumeFileName = file.FileName,
+                Summary = analysis.Summary,
+                AtsScore = analysis.AtsScore,
+                StrengthsJson = JsonSerializer.Serialize(analysis.Strengths),
+                WeaknessesJson = JsonSerializer.Serialize(analysis.Weaknesses),
+                ImprovementsJson = JsonSerializer.Serialize(analysis.ImprovementSuggestions)
             };
 
-            // Add and save
-            _db.ResumeUploads.Add(resume);
-            await _db.SaveChangesAsync();
+            try
+            {
+                // Save the entity to the database
+                _db.AIAnalyses.Add(entity);
+                await _db.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error saving analysis to the database.");
+                return StatusCode(500, "Failed to save analysis.");
+            }
 
-            return Ok(new { resume.Id });
+            // Return analysis ID
+            _logger.LogInformation("Resume uploaded and analyzed successfully for user {UserId}.", userId);
+            return Ok(new { analysisId = entity.Id });
         }
 
-        [HttpGet("my")]
-        public async Task<IActionResult> GetMyResumes()
+        // 🔹 STEP 6 — FETCH ANALYSIS BY ID
+        [Authorize]
+        [HttpGet("analysis/{id}")]
+        public async Task<IActionResult> GetAnalysis(int id)
         {
-            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (userIdClaim == null) return Unauthorized();
+            // Retrieve current user ID from JWT claims
+            var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
-            if (!Guid.TryParse(userIdClaim, out var userId))
-                return Unauthorized("Invalid user ID");
+            AIAnalysis? analysis;
+            try
+            {
+                // Query the analysis by ID and ensure it belongs to the current user
+                analysis = await _db.AIAnalyses
+                    .FirstOrDefaultAsync(a => a.Id == id && a.UserId == userId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching analysis from the database.");
+                return StatusCode(500, "Failed to fetch analysis.");
+            }
 
-            var resumes = _db.ResumeUploads
-                .Where(r => r.UserId == userId)
-                .Select(r => new
-                {
-                    r.Id,
-                    r.FileName,
-                    r.CreatedAt
-                })
-                .ToList();
+            // If no analysis found, return a NotFound status
+            if (analysis == null)
+            {
+                _logger.LogWarning("Analysis not found for ID {Id} and User {UserId}.", id, userId);
+                return NotFound("Analysis not found");
+            }
 
-            return Ok(resumes);
+            // Deserialize JSON fields (Strengths, Weaknesses, Improvements)
+            var result = new
+            {
+                analysis.Id,
+                analysis.ResumeFileName,
+                analysis.Summary,
+                analysis.AtsScore,
+                Strengths = JsonSerializer.Deserialize<string[]>(analysis.StrengthsJson),
+                Weaknesses = JsonSerializer.Deserialize<string[]>(analysis.WeaknessesJson),
+                Improvements = JsonSerializer.Deserialize<string[]>(analysis.ImprovementsJson),
+                analysis.CreatedAt
+            };
+
+            // Log successful retrieval
+            _logger.LogInformation("Analysis {Id} retrieved successfully for user {UserId}.", id, userId);
+
+            return Ok(result);
         }
     }
 }

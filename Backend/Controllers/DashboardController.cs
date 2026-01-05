@@ -1,94 +1,69 @@
-using backend.Data;
-
-using backend.Models;
-
-using Microsoft.AspNetCore.Authorization;
-
-using Microsoft.AspNetCore.Mvc;
-
+using System;
+using System.Linq;
 using System.Security.Claims;
+using System.Text.Json;
+using System.Threading.Tasks;
+using backend.Data;
+using backend.Models;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
-
-
-namespace backend.Controllers;
-
-
-
-[ApiController]
-
-[Route("api/dashboard")]
-
-[Authorize]
-
-public class DashboardController : ControllerBase
-
+namespace backend.Controllers
 {
-
-    private readonly AppDbContext _db;
-
-
-
-    public DashboardController(AppDbContext db)
-
+    [ApiController]
+    [Route("api/dashboard")]
+    [Authorize]
+    public class DashboardController : ControllerBase
     {
+        private readonly AppDbContext _db;
 
-        _db = db;
+        public DashboardController(AppDbContext db)
+        {
+            _db = db;
+        }
 
-    }
+        [HttpGet]
+        public async Task<IActionResult> GetDashboard()
+        {
+            var userId = Guid.Parse(
+                User.FindFirstValue(ClaimTypes.NameIdentifier)!
+            );
 
+            var user = await _db.Users
+                .AsNoTracking()
+                .FirstOrDefaultAsync(u => u.Id == userId);
 
+            if (user == null)
+                return Unauthorized();
 
-    [HttpGet("history")]
+            // Fetching the analyses for the user
+            var analyses = await _db.AIAnalyses
+                .Where(a => a.UserId == userId)
+                .OrderByDescending(a => a.CreatedAt)
+                .ToListAsync(); // Retrieve as a list first, without deserialization
 
-    public IActionResult GetUserHistory()
-
-    {
-
-        var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-        if (string.IsNullOrEmpty(userIdStr))
-
-            return Unauthorized();
-
-
-
-        // Parse the string to Guid
-
-        if (!Guid.TryParse(userIdStr, out var userId))
-
-            return Unauthorized();
-
-
-
-        // Fetch uploads for this user
-
-        var uploads = _db.ResumeUploads
-
-            .Where(r => r.UserId == userId) // ✅ now Guid == Guid
-
-            .OrderByDescending(r => r.CreatedAt)
-
-            .Select(r => new
-
+            // Now deserialize the JSON fields in-memory (after fetching the data)
+            var result = analyses.Select(a => new ResumeAnalysisResult
             {
+                ResumeFileName = a.ResumeFileName,
+                AtsScore = a.AtsScore,
+                Summary = a.Summary,
+                CreatedAt = a.CreatedAt,
+                Strengths = JsonSerializer.Deserialize<List<string>>(a.StrengthsJson) ?? new List<string>(),
+                Weaknesses = JsonSerializer.Deserialize<List<string>>(a.WeaknessesJson) ?? new List<string>(),
+                Improvements = JsonSerializer.Deserialize<List<string>>(a.ImprovementsJson) ?? new List<string>()
+            }).ToList();
 
-                r.Id,
-
-                r.FileName,
-
-                r.CreatedAt,
-
-                AnalysisResult = r.Analysis != null ? r.Analysis.Result : null
-
-            })
-
-            .ToList();
-
-
-
-        return Ok(uploads);
-
+            return Ok(new
+            {
+                user = new
+                {
+                    user.Email,
+                    user.CreatedAt
+                },
+                uploads = result // List of ResumeAnalysisResult objects
+            });
+        }
     }
-
 }
-
