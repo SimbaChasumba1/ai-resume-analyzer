@@ -6,64 +6,69 @@ using backend.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;  // Add logging support
+using Microsoft.Extensions.Logging;
 
 namespace backend.Controllers
 {
     [ApiController]
     [Route("api/resume")]
+    [Authorize]
     public class ResumeController : ControllerBase
     {
         private readonly AppDbContext _db;
         private readonly IPdfTextExtractor _pdf;
         private readonly IResumeAnalysisService _ai;
-        private readonly ILogger<ResumeController> _logger; // Logger injection
+        private readonly ILogger<ResumeController> _logger;
 
-        // Constructor with Logger injection
         public ResumeController(
             AppDbContext db,
             IPdfTextExtractor pdf,
             IResumeAnalysisService ai,
-            ILogger<ResumeController> logger  // Logger parameter
+            ILogger<ResumeController> logger
         )
         {
             _db = db;
             _pdf = pdf;
             _ai = ai;
-            _logger = logger;  // Assigning logger
+            _logger = logger;
         }
 
-        // 🔹 STEP 4 — UPLOAD + ANALYZE
-        [Authorize]
+        // ================================
+        // UPLOAD + ANALYZE
+        // ================================
         [HttpPost("upload")]
         public async Task<IActionResult> Upload(IFormFile file)
         {
-            // Check if a file is uploaded
             if (file == null || file.Length == 0)
             {
-                _logger.LogWarning("No file uploaded.");
+                _logger.LogWarning("Upload failed: no file provided.");
                 return BadRequest("No file uploaded");
             }
 
-            // Retrieve current user ID from JWT claims
-            var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            if (!Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out Guid userId))
+            {
+                _logger.LogWarning("Upload failed: invalid user ID.");
+                return Unauthorized("Invalid user");
+            }
 
             string resumeText;
             try
             {
-                // Extract text from the PDF
-                using (var stream = file.OpenReadStream())
+                using var stream = file.OpenReadStream();
+                resumeText = _pdf.ExtractText(stream);
+
+                if (string.IsNullOrWhiteSpace(resumeText))
                 {
-                    resumeText = _pdf.ExtractText(stream);
+                    _logger.LogWarning("PDF extraction returned empty text for file {FileName}", file.FileName);
+                    return BadRequest("Cannot extract text from this PDF");
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error extracting text from resume.");
-                return StatusCode(500, "Failed to extract text from the PDF file.");
+                _logger.LogError(ex, "PDF extraction failed for file {FileName}", file.FileName);
+                return StatusCode(500, "Failed to extract resume text");
             }
 
-            // Perform AI analysis
             ResumeAnalysisResult analysis;
             try
             {
@@ -71,11 +76,10 @@ namespace backend.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error analyzing resume text.");
-                return StatusCode(500, "AI analysis failed.");
+                _logger.LogError(ex, "AI analysis failed for file {FileName}", file.FileName);
+                return StatusCode(500, "AI analysis failed: see server logs for details");
             }
 
-            // Create a new entity to store the analysis results
             var entity = new AIAnalysis
             {
                 UserId = userId,
@@ -84,56 +88,67 @@ namespace backend.Controllers
                 AtsScore = analysis.AtsScore,
                 StrengthsJson = JsonSerializer.Serialize(analysis.Strengths),
                 WeaknessesJson = JsonSerializer.Serialize(analysis.Weaknesses),
-                ImprovementsJson = JsonSerializer.Serialize(analysis.ImprovementSuggestions)
+                ImprovementsJson = JsonSerializer.Serialize(analysis.Improvements),
+                CreatedAt = DateTime.UtcNow
             };
 
             try
             {
-                // Save the entity to the database
                 _db.AIAnalyses.Add(entity);
                 await _db.SaveChangesAsync();
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error saving analysis to the database.");
-                return StatusCode(500, "Failed to save analysis.");
+                _logger.LogError(ex, "Database save failed for file {FileName}", file.FileName);
+                return StatusCode(500, "Failed to save analysis");
             }
 
-            // Return analysis ID
-            _logger.LogInformation("Resume uploaded and analyzed successfully for user {UserId}.", userId);
+            _logger.LogInformation("Resume uploaded and analyzed successfully: {FileName}, user {UserId}", file.FileName, userId);
             return Ok(new { analysisId = entity.Id });
         }
 
-        // 🔹 STEP 6 — FETCH ANALYSIS BY ID
-        [Authorize]
-        [HttpGet("analysis/{id}")]
-        public async Task<IActionResult> GetAnalysis(int id)
+        // ================================
+        // DASHBOARD — GET MY ANALYSES
+        // ================================
+        [HttpGet("my")]
+        public async Task<IActionResult> GetMyAnalyses()
         {
-            // Retrieve current user ID from JWT claims
-            var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            if (!Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out Guid userId))
+                return Unauthorized("Invalid user");
 
-            AIAnalysis? analysis;
-            try
-            {
-                // Query the analysis by ID and ensure it belongs to the current user
-                analysis = await _db.AIAnalyses
-                    .FirstOrDefaultAsync(a => a.Id == id && a.UserId == userId);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error fetching analysis from the database.");
-                return StatusCode(500, "Failed to fetch analysis.");
-            }
+            var analyses = await _db.AIAnalyses
+                .AsNoTracking()
+                .Where(a => a.UserId == userId)
+                .OrderByDescending(a => a.CreatedAt)
+                .Select(a => new
+                {
+                    a.Id,
+                    a.ResumeFileName,
+                    a.AtsScore,
+                    a.Summary,
+                    a.CreatedAt
+                })
+                .ToListAsync();
 
-            // If no analysis found, return a NotFound status
+            return Ok(analyses);
+        }
+
+        // ================================
+        // GET ANALYSIS BY ID
+        // ================================
+        [HttpGet("analysis/{id:guid}")]
+        public async Task<IActionResult> GetAnalysis(Guid id)
+        {
+            if (!Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out Guid userId))
+                return Unauthorized("Invalid user");
+
+            var analysis = await _db.AIAnalyses
+                .FirstOrDefaultAsync(a => a.Id == id && a.UserId == userId);
+
             if (analysis == null)
-            {
-                _logger.LogWarning("Analysis not found for ID {Id} and User {UserId}.", id, userId);
                 return NotFound("Analysis not found");
-            }
 
-            // Deserialize JSON fields (Strengths, Weaknesses, Improvements)
-            var result = new
+            return Ok(new
             {
                 analysis.Id,
                 analysis.ResumeFileName,
@@ -143,12 +158,7 @@ namespace backend.Controllers
                 Weaknesses = JsonSerializer.Deserialize<string[]>(analysis.WeaknessesJson),
                 Improvements = JsonSerializer.Deserialize<string[]>(analysis.ImprovementsJson),
                 analysis.CreatedAt
-            };
-
-            // Log successful retrieval
-            _logger.LogInformation("Analysis {Id} retrieved successfully for user {UserId}.", id, userId);
-
-            return Ok(result);
+            });
         }
     }
 }
