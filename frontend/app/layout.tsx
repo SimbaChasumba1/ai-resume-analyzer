@@ -1,20 +1,22 @@
-import "./globals.css";
-import Navbar from "@/components/Navbar";
 import React from "react";
+import Navbar from "@/components/Navbar";
+import "./globals.css";
 
-export const metadata = {
-  title: "AIResumeAnalyzer",
-  description: "Upload and analyze resumes with AI — polished portfolio demo",
-};
-
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function Layout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html lang="en">
-    <body className="min-h-screen w-full bg-midnightblue text-white">
+      <body className="min-h-screen flex flex-col bg-gray-900 text-white">
+        {/* Global Navbar */}
         <Navbar />
-        <main className="max-w-6xl mx-auto px-6 py-12">{children}</main>
+        <main className="flex-1">
+          {/* Main content area */}
+          {children}
+        </main>
       </body>
     </html>
   );
 }
-

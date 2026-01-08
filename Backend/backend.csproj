@@ -16,7 +16,7 @@
   <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.4" />
   <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.4" />
   <PackageReference Include="Swashbuckle.AspNetCore" Version="10.1.0" />
-  <PackageReference Include="UglyToad.PdfPig" Version="0.1.9-alpha001" />
+  <PackageReference Include="UglyToad.PdfPig" Version="1.7.0-custom-5" />
   </ItemGroup>
 
 </Project>

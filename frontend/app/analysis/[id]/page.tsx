@@ -5,10 +5,6 @@ import { useParams, useRouter } from "next/navigation";
 import axios from "axios";
 
 import AtsRadial from "@/components/AtsRadial";
-import ResumePreview from "@/components/ResumePreview";
-import { exportAnalysis } from "@/utils/exportAnalysis";
-
-type _Debug = Parameters<typeof AtsRadial>;
 
 const API_BASE =
   process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:5240";
@@ -25,7 +21,7 @@ interface AnalysisResult {
 }
 
 export default function AnalysisPage() {
-  const { id } = useParams();
+  const { id } = useParams<{ id: string }>();
   const router = useRouter();
 
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
@@ -40,18 +36,11 @@ export default function AnalysisPage() {
       }
 
       try {
-        const res = await axios.get(
-          `${API_BASE}/api/resume/analysis/${id}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
+        const res = await axios.get(`${API_BASE}/api/resume/analysis/${id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
         setAnalysis(res.data);
-      } catch (err) {
-        console.error(err);
+      } catch {
         router.push("/dashboard");
       } finally {
         setLoading(false);
@@ -61,48 +50,62 @@ export default function AnalysisPage() {
     fetchAnalysis();
   }, [id, router]);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center text-slate-400">
-        Loading analysis...
-      </div>
-    );
-  }
+  if (loading)
+    return <div className="text-center text-slate-400">Loading...</div>;
 
   if (!analysis) return null;
 
+  // Compute some stats for left card
+  const strengthsCount = analysis.strengths.length;
+  const weaknessesCount = analysis.weaknesses.length;
+
   return (
     <div className="min-h-screen bg-midnightblue px-6 py-10">
-      <div className="max-w-7xl mx-auto flex justify-between items-center mb-10">
-        <div>
-          <h1 className="text-3xl font-bold text-white">
-            Resume Analysis
-          </h1>
-          <p className="text-slate-400">{analysis.resumeFileName}</p>
-        </div>
-
-        <button
-          onClick={() => exportAnalysis(analysis)}
-          className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-medium transition"
-        >
-          Export PDF
-        </button>
-      </div>
-
       <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Left Column */}
         <div className="space-y-6">
-          ✅ <AtsRadial score={analysis.atsScore} />
+          <AtsRadial score={analysis.atsScore} />
 
-          <ResumePreview
-            url={`${API_BASE}/api/resume/file/${analysis.id}`}
-          />
+          {/* Analysis Summary Card */}
+          <div className="bg-white/5 rounded-xl p-6 flex flex-col gap-4 shadow-lg">
+            <h3 className="text-lg font-semibold text-white/90">
+              Resume Info
+            </h3>
+            <p className="text-slate-300">
+              <span className="font-medium">File Name:</span> {analysis.resumeFileName}
+            </p>
+            <p className="text-slate-300">
+              <span className="font-medium">Uploaded:</span>{" "}
+              {new Date(analysis.createdAt).toLocaleString()}
+            </p>
+
+            {/* Simple Strengths vs Weaknesses bar */}
+            <div className="mt-4">
+              <h4 className="text-white font-medium mb-1">Analysis Breakdown</h4>
+              <div className="w-full h-4 bg-white/10 rounded-full overflow-hidden flex">
+                <div
+                  className="bg-green-500 h-full"
+                  style={{ width: `${(strengthsCount / (strengthsCount + weaknessesCount)) * 100}%` }}
+                ></div>
+                <div
+                  className="bg-red-500 h-full"
+                  style={{ width: `${(weaknessesCount / (strengthsCount + weaknessesCount)) * 100}%` }}
+                ></div>
+              </div>
+              <div className="flex justify-between text-sm text-slate-300 mt-1">
+                <span>Strengths: {strengthsCount}</span>
+                <span>Weaknesses: {weaknessesCount}</span>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div className="lg:col-span-2 space-y-8">
+        {/* Right Column - Detailed Analysis */}
+        <div className="lg:col-span-2 space-y-6">
           <Section title="Summary">{analysis.summary}</Section>
 
           <Section title="Strengths">
-            <ul className="list-disc pl-5 space-y-2">
+            <ul className="list-disc list-inside">
               {analysis.strengths.map((s, i) => (
                 <li key={i}>{s}</li>
               ))}
@@ -110,17 +113,17 @@ export default function AnalysisPage() {
           </Section>
 
           <Section title="Weaknesses">
-            <ul className="list-disc pl-5 space-y-2">
-              {analysis.weaknesses.map((w, i) => (
-                <li key={i}>{w}</li>
+            <ul className="list-disc list-inside">
+              {analysis.weaknesses.map((s, i) => (
+                <li key={i}>{s}</li>
               ))}
             </ul>
           </Section>
 
           <Section title="Improvements">
-            <ul className="list-disc pl-5 space-y-2">
-              {analysis.improvements.map((im, i) => (
-                <li key={i}>{im}</li>
+            <ul className="list-disc list-inside">
+              {analysis.improvements.map((s, i) => (
+                <li key={i}>{s}</li>
               ))}
             </ul>
           </Section>
@@ -138,13 +141,10 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <div className="bg-white/5 border border-white/10 backdrop-blur rounded-2xl p-6">
-      <h2 className="text-xl font-semibold text-white mb-3">
-        {title}
-      </h2>
-      <div className="text-slate-300 leading-relaxed">
-        {children}
-      </div>
+    <div className="bg-white/5 p-6 rounded-xl">
+      <h2 className="text-xl font-semibold mb-3">{title}</h2>
+      {children}
     </div>
   );
 }
+

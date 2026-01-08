@@ -106,9 +106,11 @@ builder.Services.AddEndpointsApiExplorer();
 
 builder.Services.AddSwaggerGen();
 
-builder.Services.AddScoped<IPdfTextExtractor, PdfTextExtractor>();
 
-builder.Services.AddHttpClient<IResumeAnalysisService, ResumeAnalysisService>();
+builder.Services.AddHttpClient<IResumeAnalysisService, OpenAIResumeAnalysisService>();
+
+
+builder.Services.AddScoped<IPdfTextExtractor, PdfTextExtractor>();
 
 
 var app = builder.Build();

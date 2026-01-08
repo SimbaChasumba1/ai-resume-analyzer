@@ -12,9 +12,6 @@ namespace backend.Models
         public Guid UserId { get; set; }
         public User User { get; set; } = null!;
 
-        public Guid ResumeUploadId { get; set; }
-        public ResumeUpload ResumeUpload { get; set; } = null!;
-
         public string ResumeFileName { get; set; } = "";
 
         public string Summary { get; set; } = "";

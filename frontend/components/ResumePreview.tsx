@@ -1,51 +1,29 @@
 "use client";
 
-
-
+import { useEffect, useState } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
 
-import { useState } from "react";
+interface Props {
+  url: string;
+}
 
+export default function ResumePreview({ url }: Props) {
+  const [numPages, setNumPages] = useState<number | null>(null);
 
+  useEffect(() => {
+    // Set the worker from the static file in public
+   pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
+  }, []);
 
-pdfjs.GlobalWorkerOptions.workerSrc =
-
-  `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.js`;
-
-
-
-export default function ResumePreview({ url }: { url: string }) {
-
-  const [pages, setPages] = useState<number>();
-
-
+  if (!url) return null;
 
   return (
-
-    <div className="bg-black/30 border border-white/10 rounded-2xl p-4">
-
-      <Document
-
-        file={url}
-
-        onLoadSuccess={(pdf) => setPages(pdf.numPages)}
-
-      >
-
-        <Page pageNumber={1} width={420} />
-
+    <div className="bg-white/5 rounded-xl p-4">
+      <Document file={url} onLoadSuccess={({ numPages }) => setNumPages(numPages)}>
+        {Array.from({ length: numPages || 0 }, (_, i) => (
+          <Page key={i} pageNumber={i + 1} width={360} />
+        ))}
       </Document>
-
-
-
-      <p className="text-xs text-slate-400 mt-2 text-center">
-
-        Previewing page 1 of {pages}
-
-      </p>
-
     </div>
-
   );
-
 }

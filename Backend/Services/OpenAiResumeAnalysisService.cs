@@ -7,18 +7,13 @@ using Microsoft.Extensions.Logging;
 
 namespace backend.Services;
 
-public interface IResumeAnalysisService
-{
-    Task<ResumeAnalysisResult> AnalyzeAsync(string resumeText);
-}
-
-public class ResumeAnalysisService : IResumeAnalysisService
+public class OpenAIResumeAnalysisService : IResumeAnalysisService
 {
     private readonly HttpClient _http;
     private readonly IConfiguration _config;
-    private readonly ILogger<ResumeAnalysisService> _logger;
+    private readonly ILogger<OpenAIResumeAnalysisService> _logger;
 
-    public ResumeAnalysisService(HttpClient http, IConfiguration config, ILogger<ResumeAnalysisService> logger)
+    public OpenAIResumeAnalysisService(HttpClient http, IConfiguration config, ILogger<OpenAIResumeAnalysisService> logger)
     {
         _http = http;
         _config = config;
@@ -29,35 +24,25 @@ public class ResumeAnalysisService : IResumeAnalysisService
     {
         var apiKey = _config["OpenAI:ApiKey"];
         if (string.IsNullOrEmpty(apiKey))
-        {
-            throw new Exception("OpenAI API key is missing in configuration.");
-        }
+            throw new Exception("OpenAI API key is missing.");
 
-        // Optional: limit resume text to prevent token overflow
         resumeText = resumeText.Length > 3000 ? resumeText.Substring(0, 3000) : resumeText;
 
-        var prompt = $"""
-        You are an expert technical recruiter.
+        var prompt = $@"You are an expert recruiter.
+Analyze the following resume and return STRICT JSON with:
+- summary (string)
+- strengths (array of strings)
+- weaknesses (array of strings)
+- atsScore (0-100 integer)
+- improvements (array of strings)
 
-        Analyze the following resume and return STRICT JSON with:
-
-        - summary (string)
-        - strengths (array of strings)
-        - weaknesses (array of strings)
-        - atsScore (0-100 integer)
-        - improvements (array of strings)
-
-        Resume:
-        {resumeText}
-        """;
+Resume:
+{resumeText}";
 
         var body = new
         {
             model = "gpt-4o-mini",
-            messages = new[]
-            {
-                new { role = "user", content = prompt }
-            },
+            messages = new[] { new { role = "user", content = prompt } },
             temperature = 0.3
         };
 
@@ -79,44 +64,12 @@ public class ResumeAnalysisService : IResumeAnalysisService
 
         var json = await response.Content.ReadAsStringAsync();
 
-        string? content;
-        try
-        {
-            using var doc = JsonDocument.Parse(json);
-            content = doc.RootElement
-                .GetProperty("choices")[0]
-                .GetProperty("message")
-                .GetProperty("content")
-                .GetString();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to parse OpenAI response JSON: {Json}", json);
-            throw new Exception("Invalid response format from OpenAI.");
-        }
+        using var doc = JsonDocument.Parse(json);
+        var content = doc.RootElement.GetProperty("choices")[0].GetProperty("message").GetProperty("content").GetString();
 
         if (string.IsNullOrWhiteSpace(content))
-        {
-            _logger.LogError("OpenAI returned empty content: {Json}", json);
             throw new Exception("OpenAI returned empty analysis.");
-        }
 
-        ResumeAnalysisResult result;
-        try
-        {
-            result = JsonSerializer.Deserialize<ResumeAnalysisResult>(content!)!;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to deserialize AI response: {Content}", content);
-            throw new Exception("AI returned invalid JSON format.");
-        }
-
-        // Ensure arrays are non-null
-        result.Strengths ??= new List<string>();
-        result.Weaknesses ??= new List<string>();
-        result.Improvements ??= new List<string>();
-
-        return result;
+        return JsonSerializer.Deserialize<ResumeAnalysisResult>(content!)!;
     }
 }

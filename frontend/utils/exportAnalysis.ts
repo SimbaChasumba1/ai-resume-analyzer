@@ -10,33 +10,38 @@ interface AnalysisResult {
 }
 
 export function exportAnalysis(analysis: AnalysisResult) {
-  const doc = new jsPDF();
+  // Check if we're in a browser environment
+  if (typeof window !== "undefined") {
+    const doc = new jsPDF();
 
-  doc.setFontSize(18);
-  doc.text("Resume Analysis", 14, 20);
+    doc.setFontSize(18);
+    doc.text("Resume Analysis", 14, 20);
 
-  doc.setFontSize(12);
-  doc.text(`File: ${analysis.resumeFileName}`, 14, 30);
-  doc.text(`ATS Score: ${analysis.atsScore}%`, 14, 40);
+    doc.setFontSize(12);
+    doc.text(`File: ${analysis.resumeFileName}`, 14, 30);
+    doc.text(`ATS Score: ${analysis.atsScore}%`, 14, 40);
 
-  doc.text("Summary:", 14, 55);
-  doc.text(analysis.summary, 14, 63, { maxWidth: 180 });
+    doc.text("Summary:", 14, 55);
+    doc.text(analysis.summary, 14, 63, { maxWidth: 180 });
 
-  let y = 90;
+    let y = 90;
 
-  const section = (title: string, items: string[]) => {
-    doc.text(title, 14, y);
-    y += 8;
-    items.forEach((i) => {
-      doc.text(`• ${i}`, 18, y);
+    const section = (title: string, items: string[]) => {
+      doc.text(title, 14, y);
+      y += 8;
+      items.forEach((i) => {
+        doc.text(`• ${i}`, 18, y);
+        y += 6;
+      });
       y += 6;
-    });
-    y += 6;
-  };
+    };
 
-  section("Strengths", analysis.strengths);
-  section("Weaknesses", analysis.weaknesses);
-  section("Improvements", analysis.improvements);
+    section("Strengths", analysis.strengths);
+    section("Weaknesses", analysis.weaknesses);
+    section("Improvements", analysis.improvements);
 
-  doc.save("resume-analysis.pdf");
+    doc.save("resume-analysis.pdf");
+  } else {
+    console.warn("exportAnalysis was called on the server-side, which is not supported.");
+  }
 }
