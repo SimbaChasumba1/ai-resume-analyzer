@@ -19,4 +19,4 @@ COPY --from=build /app/out ./
 
 # Expose port
 EXPOSE 5000
-ENTRYPOINT ["dotnet", "backend.dll"] 
+ENTRYPOINT ["dotnet", "backend.dll"]
