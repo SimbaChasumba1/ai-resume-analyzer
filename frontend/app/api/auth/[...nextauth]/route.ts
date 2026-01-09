@@ -1,7 +1,7 @@
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 
-export const authOptions = {
+const authOptions = {
   session: {
     strategy: "jwt" as const,
   },
@@ -67,5 +67,7 @@ export const authOptions = {
   },
 };
 
+// Only export GET/POST handlers for App Router
 const handler = NextAuth(authOptions);
+
 export { handler as GET, handler as POST };
