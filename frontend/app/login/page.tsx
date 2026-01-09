@@ -1,11 +1,11 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { setAuthToken } from "@/lib/auth";
 import { useState } from "react";
 
 export default function LoginPage() {
   const router = useRouter();
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -32,7 +32,11 @@ export default function LoginPage() {
       }
 
       const data: { token: string } = await res.json();
-      setAuthToken(data.token);
+
+      // ✅ store token directly
+      if (typeof window !== "undefined") {
+        localStorage.setItem("token", data.token);
+      }
 
       router.push("/dashboard");
     } catch (err) {
