@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { setAuthToken } from "@/lib/auth";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -33,7 +32,11 @@ export default function SignupPage() {
       }
 
       const data: { token: string } = await res.json();
-      setAuthToken(data.token);
+
+      //  store token directly
+      if (typeof window !== "undefined") {
+        localStorage.setItem("token", data.token);
+      }
 
       router.push("/dashboard");
     } catch (err) {
