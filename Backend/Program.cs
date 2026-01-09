@@ -94,7 +94,7 @@ builder.Services.AddCors(options =>
 
             .AllowCredentials()
 
-            .WithOrigins("http://localhost:3000");
+            .WithOrigins("https://ai-resume-analyzer-e5qa7u91f-simba-chasumbas-projects.vercel.app/");
 
     });
 
