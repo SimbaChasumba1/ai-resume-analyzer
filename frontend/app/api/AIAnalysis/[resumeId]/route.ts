@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(
   req: NextRequest,
-  context: { params: { resumeId: string } }
+  { params }: { params: Promise<{ resumeId: string }> }
 ) {
-  const { resumeId } = context.params;
+  const { resumeId } = await params;
 
   const res = await fetch(
     `${process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:5240"}/api/resume/analysis/${resumeId}`,
