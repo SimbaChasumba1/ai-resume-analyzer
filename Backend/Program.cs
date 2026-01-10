@@ -7,16 +7,18 @@ using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// DB
+// ------------------------
+// DATABASE CONFIGURATION
+// ------------------------
 string? databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
 string connectionString;
 
 if (!string.IsNullOrEmpty(databaseUrl))
 {
-    // Convert Render DATABASE_URL to Npgsql format
     var uri = new Uri(databaseUrl);
     var userInfo = uri.UserInfo.Split(':');
-    connectionString = $"Host={uri.Host};Port={uri.Port};Database={uri.AbsolutePath.TrimStart('/')};Username={userInfo[0]};Password={userInfo[1]};SSL Mode=Require;Trust Server Certificate=true";
+    var portSegment = uri.Port > 0 ? $"Port={uri.Port};" : ""; // Only include port if valid
+    connectionString = $"Host={uri.Host};{portSegment}Database={uri.AbsolutePath.TrimStart('/')};Username={userInfo[0]};Password={userInfo[1]};SSL Mode=Require;Trust Server Certificate=true";
 }
 else
 {
@@ -26,10 +28,14 @@ else
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(connectionString));
 
-// Controllers
+// ------------------------
+// CONTROLLERS
+// ------------------------
 builder.Services.AddControllers();
 
+// ------------------------
 // JWT
+// ------------------------
 builder.Services.AddScoped<IJwtService, JwtService>();
 
 var jwtKey = builder.Configuration["Jwt:Key"]!;
@@ -53,25 +59,36 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 builder.Services.AddAuthorization();
 
+// ------------------------
 // CORS
+// ------------------------
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
         policy
-            .WithOrigins("https://ai-resume-analysis-platform.vercel.app") // ✅ Frontend URL
             .AllowAnyHeader()
             .AllowAnyMethod()
-            .AllowCredentials();
+            .AllowCredentials()
+            .WithOrigins("https://ai-resume-analysis-platform.vercel.app"); // your frontend URL
     });
 });
 
+// ------------------------
+// SWAGGER
+// ------------------------
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+// ------------------------
+// SERVICES
+// ------------------------
 builder.Services.AddHttpClient<IResumeAnalysisService, OpenAIResumeAnalysisService>();
 builder.Services.AddScoped<IPdfTextExtractor, PdfTextExtractor>();
 
+// ------------------------
+// BUILD APP
+// ------------------------
 var app = builder.Build();
 
 app.UseSwagger();
