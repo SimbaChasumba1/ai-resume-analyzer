@@ -7,23 +7,8 @@ using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// DB
-string? databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
-string connectionString;
-
-if (!string.IsNullOrEmpty(databaseUrl))
-{
-    // Convert Render DATABASE_URL to Npgsql format
-    var uri = new Uri(databaseUrl);
-    var userInfo = uri.UserInfo.Split(':');
-    connectionString = $"Host={uri.Host};Port={uri.Port};Database={uri.AbsolutePath.TrimStart('/')};Username={userInfo[0]};Password={userInfo[1]};SSL Mode=Require;Trust Server Certificate=true";
-
-    Console.WriteLine($"[INFO] Using Render PostgreSQL: {uri.Host}");
-}
-else
-{
-    connectionString = builder.Configuration.GetConnectionString("DefaultConnection")!;
-}
+// DB: use default connection from appsettings.json
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")!;
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(connectionString));
@@ -61,7 +46,7 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowFrontend", policy =>
     {
         policy
-            .WithOrigins("https://ai-resume-analysis-platform.vercel.app") // Frontend URL
+            .WithOrigins("https://ai-resume-analysis-platform.vercel.app") // ✅ Frontend URL
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials();
@@ -71,18 +56,10 @@ builder.Services.AddCors(options =>
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// Your existing services
 builder.Services.AddHttpClient<IResumeAnalysisService, OpenAIResumeAnalysisService>();
 builder.Services.AddScoped<IPdfTextExtractor, PdfTextExtractor>();
 
 var app = builder.Build();
-
-// **Auto-run EF Core migrations on startup**
-using (var scope = app.Services.CreateScope())
-{
-    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    db.Database.Migrate(); // ensures tables exist on Render
-}
 
 app.UseSwagger();
 app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "AI Resume Analyzer API v1"));
