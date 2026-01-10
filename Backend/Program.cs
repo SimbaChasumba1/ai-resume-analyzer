@@ -1,104 +1,56 @@
-using System.Text;
 using backend.Data;
-using backend.Services;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
+using Npgsql;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// ------------------------
-// DATABASE CONFIGURATION
-// ------------------------
-string? databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
-string connectionString;
-
-if (!string.IsNullOrEmpty(databaseUrl))
+// ===== DATABASE CONFIG =====
+// Get connection string from environment variable
+var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
+if (string.IsNullOrEmpty(databaseUrl))
 {
-    var uri = new Uri(databaseUrl);
-    var userInfo = uri.UserInfo.Split(':');
-    var portSegment = uri.Port > 0 ? $"Port={uri.Port};" : ""; // Only include port if valid
-    connectionString = $"Host={uri.Host};{portSegment}Database={uri.AbsolutePath.TrimStart('/')};Username={userInfo[0]};Password={userInfo[1]};SSL Mode=Require;Trust Server Certificate=true";
-}
-else
-{
-    connectionString = builder.Configuration.GetConnectionString("DefaultConnection")!;
+    throw new InvalidOperationException("DATABASE_URL environment variable not set.");
 }
 
+// Convert Render DATABASE_URL to Npgsql connection string format
+var databaseUri = new Uri(databaseUrl);
+var userInfo = databaseUri.UserInfo.Split(':');
+
+var connBuilder = new NpgsqlConnectionStringBuilder
+{
+    Host = databaseUri.Host,
+    Port = databaseUri.Port > 0 ? databaseUri.Port : 5432,
+    Username = userInfo[0],
+    Password = userInfo[1],
+    Database = databaseUri.AbsolutePath.TrimStart('/'),
+    SslMode = SslMode.Require,
+    TrustServerCertificate = true
+};
+
+// ===== SERVICES =====
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(connectionString));
+    options.UseNpgsql(connBuilder.ConnectionString));
 
-// ------------------------
-// CONTROLLERS
-// ------------------------
 builder.Services.AddControllers();
-
-// ------------------------
-// JWT
-// ------------------------
-builder.Services.AddScoped<IJwtService, JwtService>();
-
-var jwtKey = builder.Configuration["Jwt:Key"]!;
-var jwtIssuer = builder.Configuration["Jwt:Issuer"]!;
-var jwtAudience = builder.Configuration["Jwt:Audience"]!;
-
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
-    {
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuer = true,
-            ValidateAudience = true,
-            ValidateLifetime = true,
-            ValidateIssuerSigningKey = true,
-            ValidIssuer = jwtIssuer,
-            ValidAudience = jwtAudience,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
-        };
-    });
-
-builder.Services.AddAuthorization();
-
-// ------------------------
-// CORS
-// ------------------------
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowFrontend", policy =>
+    options.AddPolicy("AllowAll", policy =>
     {
-        policy
-            .AllowAnyHeader()
-            .AllowAnyMethod()
-            .AllowCredentials()
-            .WithOrigins("https://ai-resume-analysis-platform.vercel.app"); // your frontend URL
+        policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod();
     });
 });
 
-// ------------------------
-// SWAGGER
-// ------------------------
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-
-// ------------------------
-// SERVICES
-// ------------------------
-builder.Services.AddHttpClient<IResumeAnalysisService, OpenAIResumeAnalysisService>();
-builder.Services.AddScoped<IPdfTextExtractor, PdfTextExtractor>();
-
-// ------------------------
-// BUILD APP
-// ------------------------
+// ===== APP =====
 var app = builder.Build();
 
 app.UseSwagger();
-app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "AI Resume Analyzer API v1"));
+app.UseSwaggerUI();
 
-app.UseCors("AllowFrontend");
+app.UseCors("AllowAll");
 
-app.UseAuthentication();
 app.UseAuthorization();
-
 app.MapControllers();
 
 app.Run();
