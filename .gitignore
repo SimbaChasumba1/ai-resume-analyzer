@@ -103,7 +103,10 @@ project.lock.json
 project.fragment.lock.json
 artifacts/
 appsettings.json
-appsettings.Development.json
+appsettings.Development.json 
+Backend/.env
+Backend/appsettings.json
+Backend/appsettings.Development.json
 
 # ASP.NET Scaffolding
 ScaffoldingReadMe.txt

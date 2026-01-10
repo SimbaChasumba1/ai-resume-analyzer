@@ -49,7 +49,19 @@ export default function AuthForm({ initialMode = "login", onClose }: AuthFormPro
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4">
-      <div className="w-full max-w-md bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-8 space-y-6">
+      <div className="relative w-full max-w-md bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-8 space-y-6">
+        
+        {/* ✕ Close button */}
+        {onClose && (
+          <button
+            onClick={onClose}
+            aria-label="Close"
+            className="absolute top-4 right-4 text-slate-400 hover:text-white text-xl leading-none"
+          >
+            ×
+          </button>
+        )}
+
         <h1 className="text-2xl font-bold text-white text-center">
           {mode === "login" ? "Login" : "Create Account"}
         </h1>
