@@ -7,8 +7,15 @@ using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// DB: use default connection from appsettings.json
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")!;
+// DB: use environment variables for Render deployment
+var host = Environment.GetEnvironmentVariable("DB_HOST") ?? "localhost";
+var port = Environment.GetEnvironmentVariable("DB_PORT") ?? "5432";
+var database = Environment.GetEnvironmentVariable("DB_NAME") ?? "your-db-name";
+var username = Environment.GetEnvironmentVariable("DB_USER") ?? "your-db-user";
+var password = Environment.GetEnvironmentVariable("DB_PASSWORD") ?? "your-db-password";
+
+var connectionString = 
+    $"Host={host};Port={port};Database={database};Username={username};Password={password};SSL Mode=Require;Trust Server Certificate=true";
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(connectionString));
