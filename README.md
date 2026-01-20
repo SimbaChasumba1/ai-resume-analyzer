@@ -1,103 +1,314 @@
-# AI Resume Analyzer
-
-This project is a web application that allows users to upload resumes, extract key information (like skills), and analyze them using AI-powered tools. The backend handles file uploads, parsing resumes, and extracting skills, while the frontend provides a user interface for uploading resumes and displaying the results.
-
-## Features
-
-- Upload resumes in PDF or DOCX formats.
-- Extract skills from uploaded resumes.
-- View detected skills and the status of the upload.
-- Backend powered by ASP.NET Core with Entity Framework for data management.
-- Frontend built using React with TypeScript.
-
----
-
-## Day 1 - Setup and Basic Backend
-
-### Tasks Completed:
-
-1. **Project Initialization:**
-   - Created a new ASP.NET Core Web API project.
-   - Set up basic project structure for the backend, including models and controllers.
-
-2. **Resume Upload Endpoint:**
-   - Created an endpoint `/resumes/upload` to handle file uploads.
-   - Utilized `IFormFile` to accept files and store them in the server’s file system.
-   - Saved uploaded resumes in the database (with metadata like file name and upload time).
-
-3. **Database Setup:**
-   - Configured Entity Framework Core to connect to a SQL Server database.
-   - Created a basic `Resume` model to store resume metadata.
-   - Set up the connection string and successfully ran migrations to create the database schema.
-
-4. **Testing:**
-   - Tested the backend file upload functionality and database interaction.
-   - Verified that uploaded files are being saved correctly and metadata is stored in the database.
-
----
-
-## Day 2 - Resume Parsing and Frontend Integration
-
-### Tasks Completed:
-
-1. **Resume Parsing Service:**
-   - Integrated a resume parsing service to extract skills from the uploaded resumes.
-   - Added logic to process the resume file and identify skills, storing these in the database.
-
-2. **Frontend Development:**
-   - Set up React project with TypeScript for the frontend.
-   - Created an `UploadForm` component to allow users to upload resumes via the frontend.
-   - Implemented the `uploadResume` function using Axios to send files to the backend for processing.
-
-3. **Skill Extraction Display:**
-   - After uploading a resume, the frontend displays a list of detected skills extracted from the resume.
-   - Added status messages (e.g., "Uploading...", "Upload success!") to indicate the status of the upload.
-
-4. **API Integration:**
-   - Integrated the backend API with the frontend using Axios.
-   - The `UploadForm` component successfully sends a POST request to the `/resumes/upload` endpoint and handles the response.
-
-5. **Testing:**
-   - Tested the frontend and backend interaction.
-   - Verified that the file upload works, the backend processes the file, and the frontend displays the extracted skills.
-
----
-
-## Day 3 - Auth, Improved Upload UI & DB persistence
-
-### Tasks Completed:
-- Implemented JWT-based auth (register/login) so users can upload resumes to a protected endpoint.
-- Improved Upload UI: drag & drop, validation (PDF/DOCX, max 5MB), progress bar, nicer styling using styled-components.
-- Backend: Save resume metadata to DB (Resumes table). Resume parsing uses PDF and DOCX libs and a SkillExtractor service.
-- Added migrations commands and instructions.
-- UI images and brand polish included (see `/frontend/public` or referenced local assets).
+AI Resume Analyzer
 
 
-## Tech Stack
 
-- **Backend:**
-  - ASP.NET Core
-  - Entity Framework Core
-  - SQL Server (for database storage)
-  - Swagger (for API documentation)
 
-- **Frontend:**
-  - React
-  - TypeScript
-  - Axios (for API requests)
 
----
+AI Resume Analyzer is a full-stack web application that allows users to upload resumes and receive AI-powered analysis, including skill extraction, job match scoring, and personalized improvement suggestions.
 
-## Setup Instructions
 
-### Prerequisites
 
-- .NET SDK (for running the backend)
-- Node.js and npm (for running the frontend)
-- SQL Server (or another database of choice) with the appropriate connection string
+The project was built to demonstrate real-world full-stack engineering, backend API design, database persistence, authentication, and AI integration using modern technologies.
 
-### Backend Setup
 
-1. Clone the repository:
-   ```bash
-   git clone <repository-url>
+
+
+
+
+
+
+
+# Project Overview
+
+
+
+
+
+Users can upload resumes (PDF or DOCX) through a modern frontend interface.
+
+The backend processes the file, extracts structured data, analyzes it using AI, and stores results in a PostgreSQL database.
+
+
+
+The application focuses on:
+
+
+
+Clean API design
+Secure file handling
+AI-assisted data processing
+Production-style frontend UX and error handling
+
+
+
+
+
+
+
+
+
+
+# Tech Stack
+
+
+
+
+
+
+
+Frontend
+
+
+
+
+
+Next.js
+React
+TypeScript
+Axios
+
+
+
+
+
+
+Backend
+
+
+
+
+
+.NET 8 Web API
+ASP.NET Core
+Entity Framework Core
+
+
+
+
+
+
+Database
+
+
+
+
+
+PostgreSQL (Render-hosted)
+
+
+
+
+
+
+AI Integration
+
+
+
+
+
+OpenAI API (resume analysis & suggestions)
+
+
+
+
+
+
+Tooling
+
+
+
+
+
+JWT authentication
+Swagger API documentation
+
+
+
+
+
+
+
+
+
+
+# Key Features
+
+
+
+
+
+Resume upload (PDF & DOCX)
+Secure, authenticated upload endpoints
+AI-powered skill extraction
+Job relevance and improvement suggestions
+Persistent storage of resume metadata and analysis results
+Clean UI with upload states, progress indicators, and validation
+RESTful backend API with proper error handling
+
+
+
+
+
+
+
+
+
+
+# Authentication
+
+
+
+
+
+JWT-based authentication (register & login)
+Protected endpoints for resume uploads
+User-specific resume ownership and access control
+
+
+
+
+
+
+
+
+
+
+# Development Highlights
+
+
+
+
+
+
+
+Backend
+
+
+
+
+
+REST API built with ASP.NET Core
+Resume parsing using PDF and DOCX libraries
+Modular services for parsing, skill extraction, and AI analysis
+PostgreSQL schema managed via Entity Framework Core migrations
+Deployed using Render with managed PostgreSQL
+
+
+
+
+
+
+Frontend
+
+
+
+
+
+Resume upload UI with validation (file type & size)
+Clear success, error, and loading states
+API integration using Axios
+Clean separation of concerns between UI and data logic
+
+
+
+
+
+
+
+
+
+
+# Known Limitations
+
+
+
+
+
+Job match scoring is heuristic-based and can be further refined
+No admin dashboard included
+AI responses depend on OpenAI API configuration and prompt tuning
+
+
+
+
+
+
+
+
+
+
+# Running the Project Locally
+
+
+
+
+
+
+
+Prerequisites
+
+
+
+
+
+.NET 8 SDK
+Node.js & npm
+PostgreSQL database (local or cloud)
+
+
+
+
+
+
+Backend Setup
+
+
+
+git clone https://github.com/SimbaChasumba1/ai-resume-analyzer.git
+
+cd Backend
+
+dotnet restore
+
+dotnet ef database update
+
+dotnet run
+
+
+
+Frontend Setup
+
+
+
+cd frontend
+
+npm install
+
+npm run dev
+
+Create a .env file with:
+
+
+
+Database connection string
+JWT secret
+OpenAI API key
+
+
+
+
+
+
+
+
+
+
+# Notes
+
+
+
+
+
+This project was built to reflect real production-style workflows rather than a demo or tutorial.
+
+It emphasizes system design, API structure, AI integration, and maintainable full-stack code.
