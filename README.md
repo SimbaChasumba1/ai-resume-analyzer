@@ -13,7 +13,7 @@ Frontend: https://ai-resume-analysis-platform.vercel.app
 
 # Project Overview
 
-Users upload resumes (PDF or DOCX) through a modern frontend interface.
+Users upload resumes (PDF) through a modern frontend interface.
 
 The backend:
 
