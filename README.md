@@ -7,7 +7,7 @@ The project demonstrates **real-world full-stack engineering**, including backen
 
 # Live Demo
 
-Frontend: https://ai-resume-analysis-platform.vercel.app
+https://ai-resume-analysis-platform.vercel.app
 
 
 
