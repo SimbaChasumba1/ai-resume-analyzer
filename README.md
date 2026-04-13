@@ -9,7 +9,9 @@ The project demonstrates **real-world full-stack engineering**, including backen
 
 https://ai-resume-analysis-platform.vercel.app
 
+# Video Walkthrough
 
+https://simbachasumba.vercel.app/work/ai-resume-analyzer
 
 # Project Overview
 
