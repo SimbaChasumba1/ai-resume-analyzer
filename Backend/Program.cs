@@ -63,7 +63,7 @@ builder.Services.AddCors(options =>
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-builder.Services.AddHttpClient<IResumeAnalysisService, OpenAIResumeAnalysisService>();
+builder.Services.AddHttpClient<IResumeAnalysisService, PythonResumeAnalysisService>();
 builder.Services.AddScoped<IPdfTextExtractor, PdfTextExtractor>();
 
 var app = builder.Build();
