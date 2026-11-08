@@ -1,10 +1,11 @@
-"use client";
+﻿"use client";
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 export default function LoginPage() {
   const router = useRouter();
+  const apiBase = (process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:5240").replace(/\/+$/, "");
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -18,7 +19,7 @@ export default function LoginPage() {
 
     try {
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:5240"}/auth/login`,
+        `${apiBase}/auth/login`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -33,7 +34,7 @@ export default function LoginPage() {
 
       const data: { token: string } = await res.json();
 
-      // ✅ store token directly
+      // âœ… store token directly
       if (typeof window !== "undefined") {
         localStorage.setItem("token", data.token);
       }
