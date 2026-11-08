@@ -1,10 +1,10 @@
-"use client";
+﻿"use client";
 
 import React, { useState } from "react";
 import axios from "axios";
 import { useRouter } from "next/navigation";
 
-const API_BASE = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:5240";
+const API_BASE = (process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:5240").replace(/\/+$/, "");
 
 type Mode = "login" | "signup";
 
@@ -51,14 +51,14 @@ export default function AuthForm({ initialMode = "login", onClose }: AuthFormPro
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4">
       <div className="relative w-full max-w-md bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-8 space-y-6">
         
-        {/* ✕ Close button */}
+        {/* âœ• Close button */}
         {onClose && (
           <button
             onClick={onClose}
             aria-label="Close"
             className="absolute top-4 right-4 text-slate-400 hover:text-white text-xl leading-none"
           >
-            ×
+            Ã—
           </button>
         )}
 
@@ -92,7 +92,7 @@ export default function AuthForm({ initialMode = "login", onClose }: AuthFormPro
         <div className="text-center text-slate-400 text-sm">
           {mode === "login" ? (
             <>
-              Don’t have an account?{" "}
+              Donâ€™t have an account?{" "}
               <button onClick={() => setMode("signup")} className="text-indigo-400 hover:underline">
                 Sign up
               </button>
@@ -112,3 +112,4 @@ export default function AuthForm({ initialMode = "login", onClose }: AuthFormPro
     </div>
   );
 }
+
