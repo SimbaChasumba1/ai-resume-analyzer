@@ -17,7 +17,9 @@ var builder = Host.CreateApplicationBuilder(args);
 
 builder.Configuration.AddEnvironmentVariables();
 
-// PostgreSQL configuration
+
+// Database configuration
+
 var host = Environment.GetEnvironmentVariable("DB_HOST")
     ?? throw new InvalidOperationException("DB_HOST is missing.");
 
@@ -33,10 +35,11 @@ var password = Environment.GetEnvironmentVariable("DB_PASSWORD")
     ?? throw new InvalidOperationException("DB_PASSWORD is missing.");
 
 var connectionString =
-    $"Host={host};Port={port};Database={database};Username={username};Password={password};SSL Mode=Require;Trust Server Certificate=true";
+    $"Host={host};Port={port};Database={database};Username={username};Password={password};SSL Mode=Require;Trust Server Certificate=true;Channel Binding=Disable";
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(connectionString));
+
 
 // Existing Python AI service
 builder.Services.AddHttpClient<
