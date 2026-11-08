@@ -1,3 +1,4 @@
+
 name: .NET CI
 
 on:
@@ -25,8 +26,7 @@ jobs:
         run: dotnet restore AIResumeAnalyzer.slnx
 
       - name: Build solution
-        run: dotnet build AIResumeAnalyzer.slnx --configuration Release --no-restore
+        run: dotnet build AIResumeAnalyzer.slnx --configuration Release
 
       - name: Run existing tests
         run: dotnet test AIResumeAnalyzer.slnx --configuration Release --no-build
-
