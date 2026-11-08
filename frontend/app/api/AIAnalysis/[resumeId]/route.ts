@@ -7,7 +7,7 @@ export async function GET(
   const { resumeId } = await params;
 
   const res = await fetch(
-    `${process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:5240"}/api/resume/analysis/${resumeId}`,
+    `${(process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:5240").replace(/\/+$/, "")}/api/resume/analysis/${resumeId}`,
     {
       headers: {
         "Content-Type": "application/json",

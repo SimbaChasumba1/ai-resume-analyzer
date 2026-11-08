@@ -16,7 +16,7 @@ const authOptions = {
         if (!credentials) return null;
 
         const res = await fetch(
-          `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/auth/login`,
+          `${(process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:5240").replace(/\/+$/, "")}/auth/login`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },

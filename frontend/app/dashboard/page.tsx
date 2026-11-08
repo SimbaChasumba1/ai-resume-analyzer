@@ -26,7 +26,7 @@ interface UserProfile {
 }
 
 const BACKEND_URL =
-  process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:5240";
+  (process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:5240").replace(/\/+$/, "");
 
 export default function DashboardPage() {
   const [resumes, setResumes] = useState<Resume[]>([]);

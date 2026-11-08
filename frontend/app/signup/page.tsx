@@ -18,7 +18,7 @@ export default function SignupPage() {
 
     try {
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:5240"}/auth/register`,
+        `${(process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:5240").replace(/\/+$/, "")}/auth/register`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

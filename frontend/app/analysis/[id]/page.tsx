@@ -7,7 +7,7 @@ import axios from "axios";
 import AtsRadial from "@/components/AtsRadial";
 
 const API_BASE =
-  process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:5240";
+  (process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:5240").replace(/\/+$/, "");
 
 interface AnalysisResult {
   id: string;
