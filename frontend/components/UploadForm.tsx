@@ -2,7 +2,6 @@
 
 import React, { useRef, useState } from "react";
 import axios from "axios";
-
 import { useRouter } from "next/navigation";
 
 const BACKEND_URL =
@@ -19,9 +18,14 @@ export default function UploadForm() {
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setDragging(false);
+
     const f = e.dataTransfer.files?.[0];
-    if (f && f.type === "application/pdf") setFile(f);
-    else alert("Please upload a PDF");
+
+    if (f && f.type === "application/pdf") {
+      setFile(f);
+    } else {
+      alert("Please upload a PDF");
+    }
   };
 
   const upload = async () => {
@@ -31,34 +35,45 @@ export default function UploadForm() {
     }
 
     const token = localStorage.getItem("token");
+
     if (!token) {
-      setStatus("You must be logged in to upload");
+      setStatus("You must be logged in to upload.");
       return;
     }
 
     try {
       setLoading(true);
-      setStatus("Uploading...");
+      setStatus("Uploading your resume...");
+
       const data = new FormData();
       data.append("file", file);
 
-      // Upload to backend
-      const res = await axios.post(`${BACKEND_URL}/api/resume/upload`, data, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "multipart/form-data",
-        },
-      });
+      const res = await axios.post(
+        `${BACKEND_URL}/api/resume/upload`,
+        data,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
-      const analysisId = res.data.analysisId;
-      setStatus("Upload successful — redirecting to analysis...");
+      const jobId = res.data.jobId;
 
-      // Redirect to Analysis Page
-      router.push(`/analysis/${analysisId}`);
+      if (!jobId) {
+        throw new Error("The server did not return an analysis job ID.");
+      }
+
+      setStatus("Resume uploaded. Preparing your analysis...");
+
+      router.push(`/analysis/${jobId}`);
     } catch (err: any) {
       console.error(err);
+
       setStatus(
-        err.response?.data?.message || "Upload failed. Is Backend running?"
+        err.response?.data?.message ||
+          err.message ||
+          "Upload failed. Please try again."
       );
     } finally {
       setLoading(false);
@@ -68,7 +83,6 @@ export default function UploadForm() {
   return (
     <div className="w-full min-h-screen flex items-center justify-center bg-midnightblue px-4">
       <div className="w-full max-w-xl p-8 rounded-3xl bg-white/5 border border-white/10 backdrop-blur-xl shadow-2xl flex flex-col gap-6 items-center">
-        {/* Upload Icon */}
         <div className="w-16 h-16 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -86,12 +100,14 @@ export default function UploadForm() {
           </svg>
         </div>
 
-        <h2 className="text-2xl font-bold text-white">Upload Your Resume</h2>
+        <h2 className="text-2xl font-bold text-white">
+          Upload Your Resume
+        </h2>
+
         <p className="text-slate-300 text-center">
           PDF only — recruiter-ready AI analysis.
         </p>
 
-        {/* Drag & Drop Box */}
         <div
           onClick={() => inputRef.current?.click()}
           onDrop={handleDrop}
@@ -136,11 +152,10 @@ export default function UploadForm() {
           </div>
         </div>
 
-        {/* Buttons */}
         <div className="w-full flex gap-3">
           <button
             onClick={upload}
-            className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 rounded-xl"
+            className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 rounded-xl disabled:opacity-50"
             disabled={loading}
           >
             {loading ? "Uploading..." : "Upload & Analyze"}
@@ -152,6 +167,7 @@ export default function UploadForm() {
               setStatus("");
             }}
             className="flex-1 border border-white/20 text-white py-3 rounded-xl hover:bg-white/10"
+            disabled={loading}
           >
             Clear
           </button>
