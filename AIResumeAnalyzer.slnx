@@ -3,5 +3,5 @@
     <Project Path="Backend/ResumeAnalysis.Worker/ResumeAnalysis.Worker.csproj" />
   </Folder>
   <Project Path="Backend.Tests/Backend.Tests.csproj" />
-  <Project Path="Backend/Backend.csproj" />
+  <Project Path="Backend/backend.csproj" />
 </Solution>
