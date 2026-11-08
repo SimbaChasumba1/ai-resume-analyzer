@@ -450,3 +450,6 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
+
+# Generated test coverage
+coveragereport/

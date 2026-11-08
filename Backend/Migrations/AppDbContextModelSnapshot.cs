@@ -28,6 +28,9 @@ namespace backend.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<Guid>("AnalysisJobId")
+                        .HasColumnType("uuid");
+
                     b.Property<int>("AtsScore")
                         .HasColumnType("integer");
 
@@ -50,27 +53,103 @@ namespace backend.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid");
-
                     b.Property<string>("WeaknessesJson")
                         .IsRequired()
                         .HasColumnType("text");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("AnalysisJobId")
+                        .IsUnique();
 
                     b.ToTable("AIAnalyses");
+                });
+
+            modelBuilder.Entity("backend.Models.AnalysisJob", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ErrorMessage")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("ResumeUploadId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("RetryCount")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("StartedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ResumeUploadId")
+                        .IsUnique();
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("UserId", "CreatedAt");
+
+                    b.ToTable("AnalysisJobs");
+                });
+
+            modelBuilder.Entity("backend.Models.OutboxMessage", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Attempts")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("LastError")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("NextAttemptAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Payload")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("ProcessedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProcessedAt", "NextAttemptAt", "CreatedAt");
+
+                    b.ToTable("OutboxMessages");
                 });
 
             modelBuilder.Entity("backend.Models.ResumeUpload", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("AnalysisId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreatedAt")
@@ -93,8 +172,6 @@ namespace backend.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("AnalysisId");
-
                     b.HasIndex("UserId");
 
                     b.ToTable("ResumeUploads");
@@ -111,7 +188,8 @@ namespace backend.Migrations
 
                     b.Property<string>("Email")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(254)
+                        .HasColumnType("character varying(254)");
 
                     b.Property<string>("PasswordHash")
                         .IsRequired()
@@ -119,35 +197,61 @@ namespace backend.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("Email")
+                        .IsUnique();
+
                     b.ToTable("Users");
                 });
 
             modelBuilder.Entity("backend.Models.AIAnalysis", b =>
                 {
+                    b.HasOne("backend.Models.AnalysisJob", "AnalysisJob")
+                        .WithOne("Analysis")
+                        .HasForeignKey("backend.Models.AIAnalysis", "AnalysisJobId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("AnalysisJob");
+                });
+
+            modelBuilder.Entity("backend.Models.AnalysisJob", b =>
+                {
+                    b.HasOne("backend.Models.ResumeUpload", "ResumeUpload")
+                        .WithOne("AnalysisJob")
+                        .HasForeignKey("backend.Models.AnalysisJob", "ResumeUploadId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("backend.Models.User", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("ResumeUpload");
 
                     b.Navigation("User");
                 });
 
             modelBuilder.Entity("backend.Models.ResumeUpload", b =>
                 {
-                    b.HasOne("backend.Models.AIAnalysis", "Analysis")
-                        .WithMany()
-                        .HasForeignKey("AnalysisId");
-
                     b.HasOne("backend.Models.User", "User")
                         .WithMany("ResumeUploads")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Analysis");
-
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("backend.Models.AnalysisJob", b =>
+                {
+                    b.Navigation("Analysis");
+                });
+
+            modelBuilder.Entity("backend.Models.ResumeUpload", b =>
+                {
+                    b.Navigation("AnalysisJob");
                 });
 
             modelBuilder.Entity("backend.Models.User", b =>

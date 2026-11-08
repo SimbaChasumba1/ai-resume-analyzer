@@ -8,15 +8,30 @@
 
   <ItemGroup>
     <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.0">
-      <PrivateAssets>all</PrivateAssets>
-    </PackageReference>
+    <PackageReference Include="DotNetEnv" Version="3.2.0" />
 
-      <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.4" />
-  <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.4" />
-  <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.4" />
-  <PackageReference Include="Swashbuckle.AspNetCore" Version="10.1.0" />
-  <PackageReference Include="UglyToad.PdfPig" Version="1.7.0-custom-5" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.4" />
+
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.4" />
+
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.4" />
+
+    <PackageReference Include="RabbitMQ.Client" Version="7.2.2" />
+
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="10.1.0" />
+
+    <PackageReference Include="UglyToad.PdfPig" Version="1.7.0-custom-5" />
+    
+    <Compile Remove="ResumeAnalysis.Worker/**/*.cs" />
+   
+    <Content Remove="ResumeAnalysis.Worker/**" />
+   
+    <None Remove="ResumeAnalysis.Worker/**" />
+    
   </ItemGroup>
+  <ItemGroup>
+    <Content Update="appsettings.json"
+             CopyToPublishDirectory="Never" />
+</ItemGroup>
 
 </Project>

@@ -1,7 +1,9 @@
+
 using System;
 using System.Linq;
 using System.Security.Claims;
 using System.Text.Json;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using backend.Data;
 using backend.Models;
@@ -26,9 +28,12 @@ namespace backend.Controllers
         [HttpGet]
         public async Task<IActionResult> GetDashboard()
         {
-            var userId = Guid.Parse(
-                User.FindFirstValue(ClaimTypes.NameIdentifier)!
-            );
+            if (!Guid.TryParse(
+                User.FindFirstValue(ClaimTypes.NameIdentifier),
+                out var userId))
+            {
+                return Unauthorized();
+            }
 
             var user = await _db.Users
                 .AsNoTracking()
@@ -37,22 +42,44 @@ namespace backend.Controllers
             if (user == null)
                 return Unauthorized();
 
-            // Fetching the analyses for the user
-            var analyses = await _db.AIAnalyses
-                .Where(a => a.UserId == userId)
-                .OrderByDescending(a => a.CreatedAt)
-                .ToListAsync(); // Retrieve as a list first, without deserialization
+            var jobs = await _db.AnalysisJobs
+                .AsNoTracking()
+                .Include(j => j.ResumeUpload)
+                .Include(j => j.Analysis)
+                .Where(j => j.UserId == userId)
+                .OrderByDescending(j => j.CreatedAt)
+                .ToListAsync();
 
-            // Now deserialize the JSON fields in-memory (after fetching the data)
-            var result = analyses.Select(a => new ResumeAnalysisResult
+            var uploads = jobs.Select(j => new
             {
-                ResumeFileName = a.ResumeFileName,
-                AtsScore = a.AtsScore,
-                Summary = a.Summary,
-                CreatedAt = a.CreatedAt,
-                Strengths = JsonSerializer.Deserialize<List<string>>(a.StrengthsJson) ?? new List<string>(),
-                Weaknesses = JsonSerializer.Deserialize<List<string>>(a.WeaknessesJson) ?? new List<string>(),
-                Improvements = JsonSerializer.Deserialize<List<string>>(a.ImprovementsJson) ?? new List<string>()
+                JobId = j.Id,
+                ResumeFileName = j.ResumeUpload.FileName,
+                Status = j.Status,
+                CreatedAt = j.CreatedAt,
+                CompletedAt = j.CompletedAt,
+
+                Analysis = j.Analysis == null ? null : new
+                {
+                    j.Analysis.Id,
+                    j.Analysis.ResumeFileName,
+                    j.Analysis.AtsScore,
+                    j.Analysis.Summary,
+
+                    Strengths =
+                        JsonSerializer.Deserialize<List<string>>(
+                            j.Analysis.StrengthsJson
+                        ) ?? new List<string>(),
+
+                    Weaknesses =
+                        JsonSerializer.Deserialize<List<string>>(
+                            j.Analysis.WeaknessesJson
+                        ) ?? new List<string>(),
+
+                    Improvements =
+                        JsonSerializer.Deserialize<List<string>>(
+                            j.Analysis.ImprovementsJson
+                        ) ?? new List<string>()
+                }
             }).ToList();
 
             return Ok(new
@@ -62,7 +89,7 @@ namespace backend.Controllers
                     user.Email,
                     user.CreatedAt
                 },
-                uploads = result // List of ResumeAnalysisResult objects
+                uploads
             });
         }
     }

@@ -1,6 +1,8 @@
+using System.Security.Claims;
+using backend.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using backend.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace backend.Controllers;
 
@@ -16,11 +18,38 @@ public class AIAnalysisController : ControllerBase
         _db = db;
     }
 
-    [HttpGet("{id}")]
-    public IActionResult GetAnalysis(int id)
+    [HttpGet("{id:guid}")]
+    public async Task<IActionResult> GetAnalysis(Guid id)
     {
-        var analysis = _db.AIAnalyses.Find(id);
-        if (analysis == null) return NotFound();
+        if (!Guid.TryParse(
+            User.FindFirstValue(ClaimTypes.NameIdentifier),
+            out var userId))
+        {
+            return Unauthorized();
+        }
+
+        var analysis = await _db.AIAnalyses
+            .AsNoTracking()
+            .Where(a =>
+                a.Id == id &&
+                a.AnalysisJob.UserId == userId)
+            .Select(a => new
+            {
+                a.Id,
+                a.AnalysisJobId,
+                a.ResumeFileName,
+                a.Summary,
+                a.StrengthsJson,
+                a.WeaknessesJson,
+                a.ImprovementsJson,
+                a.AtsScore,
+                a.CreatedAt
+            })
+            .FirstOrDefaultAsync();
+
+        if (analysis == null)
+            return NotFound();
+
         return Ok(analysis);
     }
 }

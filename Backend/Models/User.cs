@@ -9,10 +9,12 @@ public class User
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     [Required]
+    [MaxLength(254)]
     public string Email { get; set; } = string.Empty;
 
     [Required]
     public string PasswordHash { get; set; } = string.Empty;
 
-    public ICollection<ResumeUpload> ResumeUploads { get; set; } = new List<ResumeUpload>();
+    public ICollection<ResumeUpload> ResumeUploads { get; set; }
+        = new List<ResumeUpload>();
 }

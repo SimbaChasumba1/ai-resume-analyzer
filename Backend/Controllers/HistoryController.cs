@@ -1,25 +1,51 @@
+using System.Security.Claims;
 using backend.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
-namespace backend.Controllers
+namespace backend.Controllers;
+
+[Authorize]
+[ApiController]
+[Route("history")]
+public class HistoryController : ControllerBase
 {
-    [Authorize]
-    [ApiController]
-    [Route("history")]
-    public class HistoryController : ControllerBase
+    private readonly AppDbContext _db;
+
+    public HistoryController(AppDbContext db)
     {
-        private readonly AppDbContext _db;
+        _db = db;
+    }
 
-        public HistoryController(AppDbContext db)
+    [HttpGet]
+    public async Task<IActionResult> GetHistory()
+    {
+        if (!Guid.TryParse(
+            User.FindFirstValue(ClaimTypes.NameIdentifier),
+            out var userId))
         {
-            _db = db;
+            return Unauthorized();
         }
 
-        [HttpGet]
-        public IActionResult GetHistory()
-        {
-            return Ok(_db.AIAnalyses.ToList());
-        }
+        var history = await _db.AIAnalyses
+            .AsNoTracking()
+            .Where(a => a.AnalysisJob.UserId == userId)
+            .OrderByDescending(a => a.CreatedAt)
+            .Select(a => new
+            {
+                a.Id,
+                a.AnalysisJobId,
+                a.ResumeFileName,
+                a.Summary,
+                a.StrengthsJson,
+                a.WeaknessesJson,
+                a.ImprovementsJson,
+                a.AtsScore,
+                a.CreatedAt
+            })
+            .ToListAsync();
+
+        return Ok(history);
     }
 }
