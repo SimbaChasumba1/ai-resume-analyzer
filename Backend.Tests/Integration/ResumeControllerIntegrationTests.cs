@@ -17,6 +17,13 @@ public class ResumeControllerIntegrationTests : IAsyncLifetime
     private HttpClient _client = null!;
     private Guid _userId;
 
+    private static readonly byte[] ValidPdfBytes =
+        File.ReadAllBytes(
+            Path.Combine(
+                AppContext.BaseDirectory,
+                "TestData",
+                "valid-resume.pdf"));
+
     public async Task InitializeAsync()
     {
         await _factory.InitializeDatabaseAsync();
@@ -55,7 +62,7 @@ public class ResumeControllerIntegrationTests : IAsyncLifetime
         // Arrange
         using var content = CreateUpload(
             "resume.pdf",
-            [1, 2, 3]);
+            ValidPdfBytes);
 
         // Act
         var response = await _client.PostAsync(
@@ -117,7 +124,7 @@ public class ResumeControllerIntegrationTests : IAsyncLifetime
         // Arrange
         using var content = CreateUpload(
             "resume.txt",
-            [1, 2, 3]);
+            ValidPdfBytes);
 
         // Act
         var response = await _client.PostAsync(
@@ -162,7 +169,7 @@ public class ResumeControllerIntegrationTests : IAsyncLifetime
 
         using var content = CreateUpload(
             "resume.pdf",
-            [1, 2, 3]);
+            ValidPdfBytes);
 
         // Act
         var response = await unauthenticatedClient.PostAsync(
@@ -183,7 +190,7 @@ public class ResumeControllerIntegrationTests : IAsyncLifetime
         // Arrange: create a job belonging to the first user.
         using var content = CreateUpload(
             "resume.pdf",
-            [1, 2, 3]);
+            ValidPdfBytes);
 
         var uploadResponse = await _client.PostAsync(
             "/api/resume/upload",
@@ -279,3 +286,4 @@ public class ResumeControllerIntegrationTests : IAsyncLifetime
         await _factory.DisposeAsync();
     }
 }
+
