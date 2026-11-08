@@ -81,18 +81,25 @@ builder.Services
 
 builder.Services.AddAuthorization();
 
+
 // CORS
 
-var frontendOrigin =
+var frontendOrigins = new[]
+{
+    "http://localhost:3000",
+    "https://ai-resume-analysis-platform.vercel.app",
     builder.Configuration["FRONTEND_ORIGIN"]
-    ?? "http://localhost:3000";
+}
+.Where(origin => !string.IsNullOrWhiteSpace(origin))
+.Distinct()
+.ToArray();
 
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
         policy
-            .WithOrigins(frontendOrigin)
+            .WithOrigins(frontendOrigins)
             .AllowAnyHeader()
             .AllowAnyMethod();
     });
